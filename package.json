@@ -1,0 +1,27 @@
+{
+  "name": "rd-parse-jsexpr",
+  "version": "0.1.0",
+  "description": "ES6 expression grammar for use with rd-parse parser generator",
+  "main": "./dist/grammar.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel src --out-dir dist",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dmaevsky/rd-parse-jsexpr.git"
+  },
+  "keywords": [
+    "grammar",
+    "es6",
+    "parser"
+  ],
+  "author": "Dmitry Maevsky",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.1.5",
+    "@babel/core": "^7.1.6",
+    "@babel/preset-env": "^7.1.6"
+  }
+}

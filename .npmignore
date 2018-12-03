@@ -1,0 +1,12 @@
+.vscode
+
+# dependencies
+/node_modules
+
+# testing
+/coverage
+/test
+
+# dist is distributed, src is ignored
+/src
+
