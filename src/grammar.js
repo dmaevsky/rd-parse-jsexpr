@@ -40,7 +40,7 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
     Token(/(=>|\.\.\.|\|\||&&|>>>|>>|<<|<=|>=|\btypeof\b|\binstanceof\b|\bin\b|===|!==|!=|==|\+\+|--|\bnew\b|[{}[\]().?:|&=,^%*/<>+\-~!])/g, 'verbatim');
 
     const IdentifierToken = Token(/([a-zA-Z_$][a-zA-Z0-9_$]*)/g, 'identifier');
-    const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, anchors: [$.context.tokens[$.ti].start, $.context.tokens[$.ti].end] }));
+    const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, pos: $.context.tokens[$.ti].start }));
 
     // Literals
     const StringLiteral = Node(StringToken, ([value]) => ({ type: 'Literal', value }));
@@ -127,15 +127,15 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
       ([test, consequent, alternate]) => consequent ? ({ type: 'ConditionalExpression', test, consequent, alternate }) : test);
 
     // Arrow functions
-    const BindingElement = Node(All(IdentifierToken, Optional(All('=', Expression))),   // Do not support destructuring just yet
-      ([name, initializer]) => initializer ? { name, initializer } : { name });
+    const BindingElement = Node(All(Identifier, Optional(All('=', Expression))),   // Do not support destructuring just yet
+      ([param, initializer]) => initializer ? Object.assign(param, {initializer}) : param);
     const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
-    const RestElement = Node(All('...', IdentifierToken), ([rest]) => ({rest}));
+    const RestElement = Node(All('...', Identifier), ([rest]) => ({rest}));
 
     const FormalParameters = Node(All('(', Any( All(FormalsList, Optional(All(',', RestElement))), Optional(RestElement) ), ')'),
       parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [] }));
 
-    const ArrowParameters = Node(Any(IdentifierToken, FormalParameters), ([params]) => params.bound ? params : { bound: [{name: params}] });
+    const ArrowParameters = Node(Any(Identifier, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
 
     const FoolSafe = Node('{', () => { throw new Error('Object literal returned from the arrow function needs to be enclosed in ()'); });
     const ArrowResult = Any(FoolSafe, Expression);
