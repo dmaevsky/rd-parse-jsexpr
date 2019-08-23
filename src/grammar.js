@@ -23,8 +23,8 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
 
     // Assigning the same type to two Tokens makes them return the same matching rule, so one can be ignored
     const StringToken = (
-      Token(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, 'string'),   // single-quoted
-      Token(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, 'string')    // double-quoted
+      Token(/('[^'\\]*(?:\\.[^'\\]*)*')/g, 'string'),   // single-quoted
+      Token(/("[^"\\]*(?:\\.[^"\\]*)*")/g, 'string')    // double-quoted
     );
 
     const NumericToken = (
@@ -43,7 +43,7 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
     const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, pos: $.context.tokens[$.ti].start }));
 
     // Literals
-    const StringLiteral = Node(StringToken, ([value]) => ({ type: 'Literal', value }));
+    const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
     const NumericLiteral = Node(NumericToken, ([raw]) => ({ type: 'Literal', value: +raw, raw }));
     const NullLiteral = Node(NullToken, ([raw]) => ({ type: 'Literal', value: null, raw }));
     const BooleanLiteral = Node(BooleanToken, ([raw]) => ({ type: 'Literal', value: raw === 'true', raw }));

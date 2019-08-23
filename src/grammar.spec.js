@@ -13,6 +13,16 @@ describe('Testing jsexpr grammar', () => {
     expect(ast).toEqual({ type: 'Identifier', name: 'bla', pos: 1 });
   });
 
+  it('tests a string literal', () => {
+    let ast = parser.parse(' "bla \\" bla" ');
+    expect(ast).toEqual({ type: 'Literal', value: 'bla " bla', raw: '"bla \\" bla"' });
+  });
+
+  it('tests a number literal', () => {
+    let ast = parser.parse(' 5e2 ');
+    expect(ast).toEqual({ type: 'Literal', value: 500, raw: '5e2' });
+  });
+
   it('tests ArrowFunction, simple', () => {
     let ast = parser.parse('x => x * x');
     expect(ast.type).toBe('ArrowFunction');
