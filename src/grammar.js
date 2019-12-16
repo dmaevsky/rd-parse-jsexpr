@@ -34,7 +34,7 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
 
     const NullToken = Token(/\b(null)\b/g, 'null');
     const BooleanToken = Token(/\b(true|false)\b/g, 'boolean');
-    const RegExToken = Token(/\/([^/]+)\/([gimuy]*\b)?/g, 'regex');
+    // const RegExToken = Token(/\/([^/]+)\/([gimuy]*\b)?/g, 'regex');
 
     // Define 'verbatim' after the tokens so the latter get the chance to match first
     Token(/(=>|\.\.\.|\|\||&&|>>>|>>|<<|<=|>=|\btypeof\b|\binstanceof\b|\bin\b|===|!==|!=|==|\+\+|--|\bnew\b|[{}[\]().?:|&=,^%*/<>+\-~!])/g, 'verbatim');
@@ -47,9 +47,9 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
     const NumericLiteral = Node(NumericToken, ([raw]) => ({ type: 'Literal', value: +raw, raw }));
     const NullLiteral = Node(NullToken, ([raw]) => ({ type: 'Literal', value: null, raw }));
     const BooleanLiteral = Node(BooleanToken, ([raw]) => ({ type: 'Literal', value: raw === 'true', raw }));
-    const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
+    // const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
 
-    const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, RegExLiteral);
+    const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral /*, RegExLiteral*/);
 
     // Array literal
 
