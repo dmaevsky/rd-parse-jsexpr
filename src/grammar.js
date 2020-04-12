@@ -18,7 +18,7 @@ function Grammar({ Ignore, All, Any, Plus, Optional, Node }) {
   );
 
   // Turn off ignore whitespace for InterpolationChunk
-  const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`\$\\])+)/);
+  const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`$\\])+)/);
 
   const NumericToken = Any(
     /^((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/,   // decimal
