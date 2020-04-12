@@ -10,23 +10,26 @@ function Grammar({ Ignore, All, Any, Plus, Optional, Node }) {
 
   // Tokens: mostly from https://www.regular-expressions.info/examplesprogrammer.html
 
-  const Scanner = Rule => Ignore(/\s+/g, Rule);   // Ignore whitespace
+  const Scanner = Rule => Ignore(/^\s+/, Rule);   // Ignore whitespace
 
   const StringToken = Any(
-    /('[^'\\]*(?:\\.[^'\\]*)*')/g,  // single-quoted
-    /("[^"\\]*(?:\\.[^"\\]*)*")/g,  // double-quoted
+    /^('[^'\\]*(?:\\.[^'\\]*)*')/,  // single-quoted
+    /^("[^"\\]*(?:\\.[^"\\]*)*")/,  // double-quoted
   );
+
+  // Turn off ignore whitespace for InterpolationChunk
+  const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`\$\\])+)/);
 
   const NumericToken = Any(
-    /\b((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/g,   // decimal
-    /\b(0[xX][0-9a-fA-F]+)\b/g                                   // hex
+    /^((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/,   // decimal
+    /^(0[xX][0-9a-fA-F]+)\b/                                   // hex
   );
 
-  const NullToken = /\b(null)\b/g;
-  const BooleanToken = /\b(true|false)\b/g;
-  // const RegExToken = /\/([^/]+)\/([gimuy]*\b)?/g;
+  const NullToken = /^(null)\b/;
+  const BooleanToken = /^(true|false)\b/;
+  // const RegExToken = /^\/([^/]+)\/([gimuy]*\b)?/;
 
-  const IdentifierToken = /([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const IdentifierToken = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/;
 
   return Y(function(Expression) {
 
@@ -39,7 +42,13 @@ function Grammar({ Ignore, All, Any, Plus, Optional, Node }) {
     const BooleanLiteral = Node(BooleanToken, ([raw]) => ({ type: 'Literal', value: raw === 'true', raw }));
     // const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
 
-    const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral /*, RegExLiteral*/);
+    const InterpolationChunk = Node(InterpolationChunkToken, ([raw]) => ['chunks', eval('`' + raw + '`')]);
+    const TemplateInlineExpression = Node(All('${', Expression, '}'), ([expression]) => ['expressions', expression]);
+
+    const TemplateLiteral = Node(All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`'),
+      parts => parts.reduce((acc, [type, part]) => (acc[type].push(part), acc), { type: 'TemplateLiteral', chunks: [], expressions: [] }));
+
+    const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, TemplateLiteral /*, RegExLiteral*/);
 
     // Array literal
 
