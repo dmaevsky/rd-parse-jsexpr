@@ -3,28 +3,25 @@ const Grammar = require('./grammar');
 
 describe('Testing jsexpr grammar', () => {
 
-  let parser;
-  beforeEach(() => {
-    parser = new Parser(Grammar);
-  });
+  const parser = Parser(Grammar);
 
   it('tests Identifier', () => {
-    let ast = parser.parse(' bla ');
+    let ast = parser(' bla ');
     expect(ast).toEqual({ type: 'Identifier', name: 'bla', pos: 1 });
   });
 
   it('tests a string literal', () => {
-    let ast = parser.parse(' "bla \\" bla" ');
+    let ast = parser(' "bla \\" bla" ');
     expect(ast).toEqual({ type: 'Literal', value: 'bla " bla', raw: '"bla \\" bla"' });
   });
 
   it('tests a number literal', () => {
-    let ast = parser.parse(' 5e2 ');
+    let ast = parser(' 5e2 ');
     expect(ast).toEqual({ type: 'Literal', value: 500, raw: '5e2' });
   });
 
   it('tests ArrowFunction, simple', () => {
-    let ast = parser.parse('x => x * x');
+    let ast = parser('x => x * x');
     expect(ast.type).toBe('ArrowFunction');
     expect(ast.parameters.bound.length).toBe(1);
     expect(ast.parameters.bound[0]).toEqual({ type: 'Identifier', name: 'x', pos: 0 });
@@ -33,7 +30,7 @@ describe('Testing jsexpr grammar', () => {
   });
 
   it('tests ArrowFunction, with initializer and rest parameter', () => {
-    let ast = parser.parse('(c = 1, ...a) => c + a.length');
+    let ast = parser('(c = 1, ...a) => c + a.length');
     expect(ast.type).toBe('ArrowFunction');
     expect(ast.parameters.bound.length).toBe(1);
     expect(ast.parameters.bound[0].initializer).toEqual({ type: 'Literal', value: 1, raw: '1' });

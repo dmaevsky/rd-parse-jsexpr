@@ -1,6 +1,6 @@
-module.exports = Grammar;
+const Y = proc => (x => proc(y => (x(x))(y)))(x => proc(y => (x(x))(y)));
 
-function Grammar(Token, All, Any, Plus, Optional, Node) {
+function Grammar({ Ignore, All, Any, Plus, Optional, Node }) {
   const Star = rule => Optional(Plus(rule));
 
   // An "immutable" pure functional reduction of ECMAScript grammar:
@@ -8,39 +8,29 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
   // and http://tomcopeland.blogs.com/EcmaScript.html
   // Matches (almost) anything you can put on the right hand side of an assignment operator in ES6
 
-  // Y combinator
-  const Y = function (gen) {
-    return (function(f) {return f(f)})( function(f) {
-      return gen(function() {return f(f).apply(null, arguments)});
-    });
-  }
+  // Tokens: mostly from https://www.regular-expressions.info/examplesprogrammer.html
+
+  const Scanner = Rule => Ignore(/\s+/g, Rule);   // Ignore whitespace
+
+  const StringToken = Any(
+    /('[^'\\]*(?:\\.[^'\\]*)*')/g,  // single-quoted
+    /("[^"\\]*(?:\\.[^"\\]*)*")/g,  // double-quoted
+  );
+
+  const NumericToken = Any(
+    /\b((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/g,   // decimal
+    /\b(0[xX][0-9a-fA-F]+)\b/g                                   // hex
+  );
+
+  const NullToken = /\b(null)\b/g;
+  const BooleanToken = /\b(true|false)\b/g;
+  // const RegExToken = /\/([^/]+)\/([gimuy]*\b)?/g;
+
+  const IdentifierToken = /([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
   return Y(function(Expression) {
 
-    Token(/\s+/g, 'ignore');   // Ignore whitespace
-
-    // Tokens: mostly from https://www.regular-expressions.info/examplesprogrammer.html
-
-    // Assigning the same type to two Tokens makes them return the same matching rule, so one can be ignored
-    const StringToken = (
-      Token(/('[^'\\]*(?:\\.[^'\\]*)*')/g, 'string'),   // single-quoted
-      Token(/("[^"\\]*(?:\\.[^"\\]*)*")/g, 'string')    // double-quoted
-    );
-
-    const NumericToken = (
-      Token(/\b((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/g, 'number'),   // decimal
-      Token(/\b(0[xX][0-9a-fA-F]+)\b/g, 'number')                                   // hex
-    );
-
-    const NullToken = Token(/\b(null)\b/g, 'null');
-    const BooleanToken = Token(/\b(true|false)\b/g, 'boolean');
-    // const RegExToken = Token(/\/([^/]+)\/([gimuy]*\b)?/g, 'regex');
-
-    // Define 'verbatim' after the tokens so the latter get the chance to match first
-    Token(/(=>|\.\.\.|\|\||&&|>>>|>>|<<|<=|>=|\btypeof\b|\binstanceof\b|\bin\b|===|!==|!=|==|\+\+|--|\bnew\b|[{}[\]().?:|&=,^%*/<>+\-~!])/g, 'verbatim');
-
-    const IdentifierToken = Token(/([a-zA-Z_$][a-zA-Z0-9_$]*)/g, 'identifier');
-    const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, pos: $.context.tokens[$.ti].start }));
+    const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, pos: $.pos }));
 
     // Literals
     const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
@@ -97,7 +87,7 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
 
     // Unary expressions
 
-    const Operator = Rule => Node(Rule, (_, $) => $.context.tokens[$.ti].captures[0]);
+    const Operator = Rule => Node(Rule, (_, $, $next) => $.text.substring($.pos, $next.pos));
 
     const UnaryOperator = Operator(Any('+', '-', '~', '!', 'typeof'));
     const UnaryExpression = Node(All(Star(UnaryOperator), LeftHandSideExpression),
@@ -107,9 +97,9 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
     const BinaryOperatorPrecedence = [
       Any('*', '/', '%'),
       Any('+', '-'),
-      Any('<<', '>>', '>>>'),
-      Any('<', '>', '<=', '>=', 'instanceof', 'in'),
-      Any('==', '!=', '===', '!=='),
+      Any('>>>', '<<', '>>'),
+      Any('<=', '>=', '<', '>', 'instanceof', 'in'),
+      Any('===', '!==', '==', '!='),
       '&',
       '^',
       '|',
@@ -142,6 +132,8 @@ function Grammar(Token, All, Any, Plus, Optional, Node) {
 
     const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
 
-    return Any(ArrowFunction, ConditionalExpression);
+    return Scanner(Any(ArrowFunction, ConditionalExpression));
   });
 }
+
+module.exports = Grammar;
