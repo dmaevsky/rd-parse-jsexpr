@@ -4,7 +4,12 @@
   "description": "ES6 expression grammar for use with rd-parse parser generator",
   "main": "./dist/grammar.js",
   "scripts": {
-    "test": "jasmine src/grammar.spec.js"
+    "test": "ava -v"
+  },
+  "ava": {
+    "files": [
+      "**/*.spec.js"
+    ]
   },
   "repository": {
     "type": "git",
@@ -18,6 +23,7 @@
   "author": "Dmitry Maevsky",
   "license": "MIT",
   "devDependencies": {
+    "ava": "^3.6.0",
     "rd-parse": "dmaevsky/rd-parse#v3"
   }
 }
