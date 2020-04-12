@@ -41,8 +41,9 @@ test('ArrowFunction, with initializer and rest parameter', t => {
 test('template literals', t => {
   const ast = parser('`${a} + ${b} is ${a + b}`');
   t.is(ast.type, 'TemplateLiteral');
-  t.deepEqual(ast.chunks, [' + ', ' is ']);
-  t.is(ast.expressions[0].type, 'Identifier');
-  t.is(ast.expressions[1].type, 'Identifier');
-  t.is(ast.expressions[2].type, 'BinaryExpression');
+  t.deepEqual(ast.parts[0], ['expressions', { type: 'Identifier', name: 'a', pos: 3 }]);
+  t.deepEqual(ast.parts[1], ['chunks', ' + ']);
+  t.deepEqual(ast.parts[2], ['expressions', { type: 'Identifier', name: 'b', pos: 10 }]);
+  t.deepEqual(ast.parts[3], ['chunks', ' is ']);
+  t.is(ast.parts[4][1].type, 'BinaryExpression');
 });

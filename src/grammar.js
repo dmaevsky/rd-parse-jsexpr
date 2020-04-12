@@ -46,7 +46,7 @@ function Grammar({ Ignore, All, Any, Plus, Optional, Node }) {
     const TemplateInlineExpression = Node(All('${', Expression, '}'), ([expression]) => ['expressions', expression]);
 
     const TemplateLiteral = Node(All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`'),
-      parts => parts.reduce((acc, [type, part]) => (acc[type].push(part), acc), { type: 'TemplateLiteral', chunks: [], expressions: [] }));
+      parts => ({ type: 'TemplateLiteral', parts }));
 
     const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, TemplateLiteral /*, RegExLiteral*/);
 
