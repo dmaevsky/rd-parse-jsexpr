@@ -1,8 +1,7 @@
-const test = require('ava');
+import test from 'ava';
 
-const Parser = require('rd-parse');
-const Grammar = require('./grammar');
-
+import Parser from 'rd-parse';
+import Grammar from './grammar';
 
 const parser = Parser(Grammar);
 

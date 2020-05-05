@@ -9,12 +9,12 @@ The mutating constructs such as increment / decrement / assignment operators, as
 
 Usage:
 ```javascript
-    var Parser = require('rd-parse');
-    var Grammar = require('rd-parse-jsexpr');
+    import Parser from 'rd-parse';
+    import Grammar from 'rd-parse-jsexpr';
 
-    var p = new Parser(Grammar);
+    const parser = Parser(Grammar);
 
-    var ast = p.parse("[1,2,3].map(a => a*a).reduce((a,b) => a + b)");
+    const ast = parser('[1,2,3].map(a => a*a).reduce((a,b) => a + b)');
 
     console.log(JSON.stringify(ast, null, 2));      // Pretty print your AST
 ```

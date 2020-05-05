@@ -1,148 +1,144 @@
-const Y = proc => (x => proc(y => (x(x))(y)))(x => proc(y => (x(x))(y)));
+import { Ignore, All, Any, Optional, Star, Node, Y } from 'rd-parse';
 
-function Grammar({ Ignore, All, Any, Plus, Optional, Node }) {
-  const Star = rule => Optional(Plus(rule));
+// An "immutable" pure functional reduction of ECMAScript grammar:
+// loosely based on https://gist.github.com/avdg/1f10e268e484b1284b46
+// and http://tomcopeland.blogs.com/EcmaScript.html
+// Matches (almost) anything you can put on the right hand side of an assignment operator in ES6
 
-  // An "immutable" pure functional reduction of ECMAScript grammar:
-  // loosely based on https://gist.github.com/avdg/1f10e268e484b1284b46
-  // and http://tomcopeland.blogs.com/EcmaScript.html
-  // Matches (almost) anything you can put on the right hand side of an assignment operator in ES6
+// Tokens: mostly from https://www.regular-expressions.info/examplesprogrammer.html
 
-  // Tokens: mostly from https://www.regular-expressions.info/examplesprogrammer.html
+const Scanner = Rule => Ignore(/^\s+/, Rule);   // Ignore whitespace
 
-  const Scanner = Rule => Ignore(/^\s+/, Rule);   // Ignore whitespace
+const StringToken = Any(
+  /^('[^'\\]*(?:\\.[^'\\]*)*')/,  // single-quoted
+  /^("[^"\\]*(?:\\.[^"\\]*)*")/,  // double-quoted
+);
 
-  const StringToken = Any(
-    /^('[^'\\]*(?:\\.[^'\\]*)*')/,  // single-quoted
-    /^("[^"\\]*(?:\\.[^"\\]*)*")/,  // double-quoted
-  );
+// Turn off ignore whitespace for InterpolationChunk
+const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`$\\])+)/);
 
-  // Turn off ignore whitespace for InterpolationChunk
-  const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`$\\])+)/);
+const NumericToken = Any(
+  /^((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/,   // decimal
+  /^(0[xX][0-9a-fA-F]+)\b/                                   // hex
+);
 
-  const NumericToken = Any(
-    /^((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/,   // decimal
-    /^(0[xX][0-9a-fA-F]+)\b/                                   // hex
-  );
+const NullToken = /^(null)\b/;
+const BooleanToken = /^(true|false)\b/;
+// const RegExToken = /^\/([^/]+)\/([gimuy]*\b)?/;
 
-  const NullToken = /^(null)\b/;
-  const BooleanToken = /^(true|false)\b/;
-  // const RegExToken = /^\/([^/]+)\/([gimuy]*\b)?/;
+const IdentifierToken = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/;
 
-  const IdentifierToken = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/;
+const Grammar = Y(function(Expression) {
 
-  return Y(function(Expression) {
+  const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, pos: $.pos }));
 
-    const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, pos: $.pos }));
+  // Literals
+  const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
+  const NumericLiteral = Node(NumericToken, ([raw]) => ({ type: 'Literal', value: +raw, raw }));
+  const NullLiteral = Node(NullToken, ([raw]) => ({ type: 'Literal', value: null, raw }));
+  const BooleanLiteral = Node(BooleanToken, ([raw]) => ({ type: 'Literal', value: raw === 'true', raw }));
+  // const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
 
-    // Literals
-    const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
-    const NumericLiteral = Node(NumericToken, ([raw]) => ({ type: 'Literal', value: +raw, raw }));
-    const NullLiteral = Node(NullToken, ([raw]) => ({ type: 'Literal', value: null, raw }));
-    const BooleanLiteral = Node(BooleanToken, ([raw]) => ({ type: 'Literal', value: raw === 'true', raw }));
-    // const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
+  const InterpolationChunk = Node(InterpolationChunkToken, ([raw]) => ['chunks', eval('`' + raw + '`')]);
+  const TemplateInlineExpression = Node(All('${', Expression, '}'), ([expression]) => ['expressions', expression]);
 
-    const InterpolationChunk = Node(InterpolationChunkToken, ([raw]) => ['chunks', eval('`' + raw + '`')]);
-    const TemplateInlineExpression = Node(All('${', Expression, '}'), ([expression]) => ['expressions', expression]);
+  const TemplateLiteral = Node(All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`'),
+    parts => ({ type: 'TemplateLiteral', parts }));
 
-    const TemplateLiteral = Node(All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`'),
-      parts => ({ type: 'TemplateLiteral', parts }));
+  const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, TemplateLiteral /*, RegExLiteral*/);
 
-    const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, TemplateLiteral /*, RegExLiteral*/);
+  // Array literal
 
-    // Array literal
+  const EmptyElement = Node(',', () => ({ type: 'EmptyElement'}));
+  const Elision = All(',', Star(EmptyElement));
+  const SpreadElement = Node(All('...', Expression), ([expression]) => ({ type: 'SpreadElement', expression }));
+  const Element = Any(SpreadElement, Expression);
 
-    const EmptyElement = Node(',', () => ({ type: 'EmptyElement'}));
-    const Elision = All(',', Star(EmptyElement));
-    const SpreadElement = Node(All('...', Expression), ([expression]) => ({ type: 'SpreadElement', expression }));
-    const Element = Any(SpreadElement, Expression);
+  const ElementList = All(Star(EmptyElement), Element, Star(All(Elision, Element)));
 
-    const ElementList = All(Star(EmptyElement), Element, Star(All(Elision, Element)));
+  const ArrayLiteral =	Node(All('[', Any(
+    All(Star(EmptyElement), ']'),
+    All(ElementList, Optional(Elision), ']'),
+  )), elements => ({ type: 'ArrayLiteral', elements }));
 
-    const ArrayLiteral =	Node(All('[', Any(
-      All(Star(EmptyElement), ']'),
-      All(ElementList, Optional(Elision), ']'),
-    )), elements => ({ type: 'ArrayLiteral', elements }));
+  // Compound expression
+  const CompoundExpression = Node(All(Expression, Star(All(',', Expression))),
+    leafs => leafs.length > 1 ? { type: 'CompoundExpression', leafs } : leafs[0]);
 
-    // Compound expression
-    const CompoundExpression = Node(All(Expression, Star(All(',', Expression))),
-      leafs => leafs.length > 1 ? { type: 'CompoundExpression', leafs } : leafs[0]);
+  // Object literal
 
-    // Object literal
+  const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([expression]) => ({ type: 'ComputedProperty', expression }));
+  const PropertyName = Any(Identifier, StringLiteral, NumericLiteral, ComputedPropertyName);
+  const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), Identifier), ([name, value]) => ({name, value: value || name}));
+  const PropertyDefinitions = All(PropertyDefinition, Star(All(',', PropertyDefinition)));
+  const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(',')) );
+  const ObjectLiteral = Node(All('{', PropertyDefinitionList, '}'), properties => ({ type: 'ObjectLiteral', properties}));
 
-    const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([expression]) => ({ type: 'ComputedProperty', expression }));
-    const PropertyName = Any(Identifier, StringLiteral, NumericLiteral, ComputedPropertyName);
-    const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), Identifier), ([name, value]) => ({name, value: value || name}));
-    const PropertyDefinitions = All(PropertyDefinition, Star(All(',', PropertyDefinition)));
-    const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(',')) );
-    const ObjectLiteral = Node(All('{', PropertyDefinitionList, '}'), properties => ({ type: 'ObjectLiteral', properties}));
+  // Primary expression
+  const PrimaryExpression = Any(Identifier, Literal, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')'));
 
-    // Primary expression
-    const PrimaryExpression = Any(Identifier, Literal, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')'));
+  // Member expression
+  const ArgumentsList = All(Element, Star(All(',', Element)));
+  const Arguments = Node(All('(', Optional(All(ArgumentsList, Optional(','))), ')'), args => ({ args }));
 
-    // Member expression
-    const ArgumentsList = All(Element, Star(All(',', Element)));
-    const Arguments = Node(All('(', Optional(All(ArgumentsList, Optional(','))), ')'), args => ({ args }));
+  const PropertyAccess = Any(All('.', Identifier), ComputedPropertyName);
+  const MemberExpression = Node(All(PrimaryExpression, Star(Any(PropertyAccess, Arguments))),
+    parts => parts.reduce((acc, part) => ( part.args  ?
+      { type: 'CallExpression', callee: acc, arguments: part.args } :
+      { type: 'MemberExpression', object: acc, property: part }
+  )));
 
-    const PropertyAccess = Any(All('.', Identifier), ComputedPropertyName);
-    const MemberExpression = Node(All(PrimaryExpression, Star(Any(PropertyAccess, Arguments))),
-      parts => parts.reduce((acc, part) => ( part.args  ?
-        { type: 'CallExpression', callee: acc, arguments: part.args } :
-        { type: 'MemberExpression', object: acc, property: part }
-    )));
+  const NewExpression = Node(All('new', MemberExpression), ([expression]) => ({ type: 'NewExpression', expression }));
+  const LeftHandSideExpression = Any(NewExpression, MemberExpression);
 
-    const NewExpression = Node(All('new', MemberExpression), ([expression]) => ({ type: 'NewExpression', expression }));
-    const LeftHandSideExpression = Any(NewExpression, MemberExpression);
+  // Unary expressions
 
-    // Unary expressions
+  const Operator = Rule => Node(Rule, (_, $, $next) => $.text.substring($.pos, $next.pos));
 
-    const Operator = Rule => Node(Rule, (_, $, $next) => $.text.substring($.pos, $next.pos));
+  const UnaryOperator = Operator(Any('+', '-', '~', '!', 'typeof'));
+  const UnaryExpression = Node(All(Star(UnaryOperator), LeftHandSideExpression),
+    parts => parts.reduceRight((argument, operator) => ({ type: 'UnaryExpression', argument, operator })));
 
-    const UnaryOperator = Operator(Any('+', '-', '~', '!', 'typeof'));
-    const UnaryExpression = Node(All(Star(UnaryOperator), LeftHandSideExpression),
-      parts => parts.reduceRight((argument, operator) => ({ type: 'UnaryExpression', argument, operator })));
+  // Binary expressions
+  const BinaryOperatorPrecedence = [
+    Any('*', '/', '%'),
+    Any('+', '-'),
+    Any('>>>', '<<', '>>'),
+    Any('<=', '>=', '<', '>', 'instanceof', 'in'),
+    Any('===', '!==', '==', '!='),
+    '&',
+    '^',
+    '|',
+    '&&',
+    '||'
+  ];
 
-    // Binary expressions
-    const BinaryOperatorPrecedence = [
-      Any('*', '/', '%'),
-      Any('+', '-'),
-      Any('>>>', '<<', '>>'),
-      Any('<=', '>=', '<', '>', 'instanceof', 'in'),
-      Any('===', '!==', '==', '!='),
-      '&',
-      '^',
-      '|',
-      '&&',
-      '||'
-    ];
+  const ApplyBinaryOp = (BinaryOp, Expr) => Node(All(Operator(BinaryOp), Expr), ([operator, right]) => ({operator, right}));
+  const ExpressionConstructor = (Expr, BinaryOp) => Node(All(Expr, Star(ApplyBinaryOp(BinaryOp, Expr))),
+    parts => parts.reduce((left, { operator, right }) => ({ type: 'BinaryExpression', left, right, operator })));
 
-    const ApplyBinaryOp = (BinaryOp, Expr) => Node(All(Operator(BinaryOp), Expr), ([operator, right]) => ({operator, right}));
-    const ExpressionConstructor = (Expr, BinaryOp) => Node(All(Expr, Star(ApplyBinaryOp(BinaryOp, Expr))),
-      parts => parts.reduce((left, { operator, right }) => ({ type: 'BinaryExpression', left, right, operator })));
+  const LogicalORExpression = BinaryOperatorPrecedence.reduce(ExpressionConstructor, UnaryExpression);
 
-    const LogicalORExpression = BinaryOperatorPrecedence.reduce(ExpressionConstructor, UnaryExpression);
+  const ConditionalExpression = Node(All(LogicalORExpression, Optional(All('?', Expression, ':', Expression))),
+    ([test, consequent, alternate]) => consequent ? ({ type: 'ConditionalExpression', test, consequent, alternate }) : test);
 
-    const ConditionalExpression = Node(All(LogicalORExpression, Optional(All('?', Expression, ':', Expression))),
-      ([test, consequent, alternate]) => consequent ? ({ type: 'ConditionalExpression', test, consequent, alternate }) : test);
+  // Arrow functions
+  const BindingElement = Node(All(Identifier, Optional(All('=', Expression))),   // Do not support destructuring just yet
+    ([param, initializer]) => initializer ? Object.assign(param, {initializer}) : param);
+  const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
+  const RestElement = Node(All('...', Identifier), ([rest]) => ({rest}));
 
-    // Arrow functions
-    const BindingElement = Node(All(Identifier, Optional(All('=', Expression))),   // Do not support destructuring just yet
-      ([param, initializer]) => initializer ? Object.assign(param, {initializer}) : param);
-    const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
-    const RestElement = Node(All('...', Identifier), ([rest]) => ({rest}));
+  const FormalParameters = Node(All('(', Any( All(FormalsList, Optional(All(',', RestElement))), Optional(RestElement) ), ')'),
+    parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [] }));
 
-    const FormalParameters = Node(All('(', Any( All(FormalsList, Optional(All(',', RestElement))), Optional(RestElement) ), ')'),
-      parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [] }));
+  const ArrowParameters = Node(Any(Identifier, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
 
-    const ArrowParameters = Node(Any(Identifier, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
+  const FoolSafe = Node('{', () => { throw new Error('Object literal returned from the arrow function needs to be enclosed in ()'); });
+  const ArrowResult = Any(FoolSafe, Expression);
 
-    const FoolSafe = Node('{', () => { throw new Error('Object literal returned from the arrow function needs to be enclosed in ()'); });
-    const ArrowResult = Any(FoolSafe, Expression);
+  const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
 
-    const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
+  return Scanner(Any(ArrowFunction, ConditionalExpression));
+});
 
-    return Scanner(Any(ArrowFunction, ConditionalExpression));
-  });
-}
-
-module.exports = Grammar;
+export default Grammar;

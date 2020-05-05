@@ -2,13 +2,17 @@
   "name": "rd-parse-jsexpr",
   "version": "1.0.0",
   "description": "ES6 expression grammar for use with rd-parse parser generator",
-  "main": "./dist/grammar.js",
+  "main": "./src/grammar.js",
+  "module": "./src/grammar.js",
   "scripts": {
     "test": "ava -v"
   },
   "ava": {
     "files": [
       "**/*.spec.js"
+    ],
+    "require": [
+      "esm"
     ]
   },
   "repository": {
@@ -24,6 +28,9 @@
   "license": "MIT",
   "devDependencies": {
     "ava": "^3.6.0",
-    "rd-parse": "dmaevsky/rd-parse#v3"
+    "esm": "^3.2.25"
+  },
+  "dependencies": {
+    "rd-parse": "^3.0.0"
   }
 }
