@@ -30,7 +30,8 @@ const IdentifierToken = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/;
 
 const Grammar = Y(function(Expression) {
 
-  const Identifier = Node(IdentifierToken, ([name], $) => ({ type: 'Identifier', name, pos: $.pos }));
+  const Identifier = Node(IdentifierToken, ([name], $) => Object.defineProperty({ type: 'Identifier', name },
+    'pos', { enumerable: false, value: $.pos }));
 
   // Literals
   const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
