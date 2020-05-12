@@ -9,24 +9,24 @@ import { Ignore, All, Any, Optional, Star, Node, Y } from 'rd-parse';
 
 const Scanner = Rule => Ignore(/^\s+/, Rule);   // Ignore whitespace
 
-const StringToken = Any(
+export const StringToken = Any(
   /^('[^'\\]*(?:\\.[^'\\]*)*')/,  // single-quoted
   /^("[^"\\]*(?:\\.[^"\\]*)*")/,  // double-quoted
 );
 
 // Turn off ignore whitespace for InterpolationChunk
-const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`$\\])+)/);
+export const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`$\\])+)/);
 
-const NumericToken = Any(
+export const NumericToken = Any(
   /^((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/,   // decimal
   /^(0[xX][0-9a-fA-F]+)\b/                                   // hex
 );
 
-const NullToken = /^(null)\b/;
-const BooleanToken = /^(true|false)\b/;
+export const NullToken = /^(null)\b/;
+export const BooleanToken = /^(true|false)\b/;
 // const RegExToken = /^\/([^/]+)\/([gimuy]*\b)?/;
 
-const IdentifierToken = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/;
+export const IdentifierToken = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/;
 
 const Grammar = Y(function(Expression) {
 
