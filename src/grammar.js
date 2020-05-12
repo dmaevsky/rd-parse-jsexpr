@@ -76,7 +76,7 @@ const Grammar = Y(function(Expression) {
   const ObjectLiteral = Node(All('{', PropertyDefinitionList, '}'), properties => ({ type: 'ObjectLiteral', properties}));
 
   // Primary expression
-  const PrimaryExpression = Any(Identifier, Literal, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')'));
+  const PrimaryExpression = Any(Literal, Identifier, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')'));
 
   // Member expression
   const ArgumentsList = All(Element, Star(All(',', Element)));
@@ -101,15 +101,18 @@ const Grammar = Y(function(Expression) {
     parts => parts.reduceRight((argument, operator) => ({ type: 'UnaryExpression', argument, operator })));
 
   // Binary expressions
+  const BitwiseAnd = /^&(?!&)/;
+  const BitwiseOr = /^\|(?!\|)/;
+
   const BinaryOperatorPrecedence = [
     Any('*', '/', '%'),
     Any('+', '-'),
     Any('>>>', '<<', '>>'),
     Any('<=', '>=', '<', '>', 'instanceof', 'in'),
     Any('===', '!==', '==', '!='),
-    '&',
+    BitwiseAnd,
     '^',
-    '|',
+    BitwiseOr,
     '&&',
     '||'
   ];

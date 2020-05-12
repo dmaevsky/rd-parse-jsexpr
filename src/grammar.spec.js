@@ -5,10 +5,20 @@ import Grammar from './grammar';
 
 const parser = Parser(Grammar);
 
+test('empty input', t => {
+  const ast = parser('');
+  t.is(ast, undefined);
+});
+
 test('Identifier', t => {
   const ast = parser(' bla ');
   t.deepEqual(ast, { type: 'Identifier', name: 'bla' });
   t.is(ast.pos, 1);
+});
+
+test('boolean literals', t => {
+  const ast = parser('false || true');
+  t.snapshot(ast);
 });
 
 test('a string literal', t => {
