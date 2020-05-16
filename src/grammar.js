@@ -7,7 +7,7 @@ import { Ignore, All, Any, Optional, Star, Node, Y } from 'rd-parse';
 
 // Tokens: mostly from https://www.regular-expressions.info/examplesprogrammer.html
 
-const Scanner = Rule => Ignore(/^\s+/, Rule);   // Ignore whitespace
+export const IgnoreWhitespace = Rule => Ignore(/^\s+/, Rule);
 
 export const StringToken = Any(
   /^('[^'\\]*(?:\\.[^'\\]*)*')/,  // single-quoted
@@ -142,7 +142,7 @@ const Grammar = Y(function(Expression) {
 
   const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
 
-  return Scanner(Any(ArrowFunction, ConditionalExpression));
+  return IgnoreWhitespace(Any(ArrowFunction, ConditionalExpression));
 });
 
 export default Grammar;
