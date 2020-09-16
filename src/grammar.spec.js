@@ -6,7 +6,11 @@ import Grammar from './grammar';
 const parser = Parser(Grammar);
 
 test('empty input', t => {
-  t.throws(() => parser(''), { instanceOf: Error, message: 'Unexpected token at pos 0. Remainder: ' });
+  t.throws(() => parser(''), { instanceOf: Error, message: 'Unexpected token at 1:1. Remainder: ' });
+});
+
+test('faulty input', t => {
+  t.throws(() => parser('a + \n]'), { instanceOf: Error, message: 'Unexpected token at 2:1. Remainder: ]' });
 });
 
 test('Identifier', t => {
