@@ -61,3 +61,8 @@ test('template literals', t => {
   t.deepEqual(ast.parts[3], ['chunks', ' is ']);
   t.is(ast.parts[4][1].type, 'BinaryExpression');
 });
+
+test('template litarals 2', t => {
+  const input = '`Mismatched timing labels (expected ${this.current_timing.label}, got ${label})`';
+  t.snapshot(parser(input));
+});

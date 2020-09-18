@@ -1423,10 +1423,10 @@ rc@^1.2.8:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-rd-parse@^3.2.1:
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/rd-parse/-/rd-parse-3.2.1.tgz#c5cb96b43c742e927c3c73a1df3eaf54369f4297"
-  integrity sha512-e0uyCVgT0Rs3/Q4HVrg9mf6X7wcEcRtJk0tJyAy8Yf/8QU9Q9QqXTnhs7wLbz7RFbR7R/l/5DqAYyxIfo3XUXg==
+rd-parse@^3.2.3:
+  version "3.2.3"
+  resolved "https://registry.yarnpkg.com/rd-parse/-/rd-parse-3.2.3.tgz#43fcad754085d42621379719e85ecde9860ae904"
+  integrity sha512-mYesTntEDWwFWbCUi8SGpc+Eqj6oZyYydJov4k3BkhWDhs0dKmq5TJGtQuzXO505S0wH8PNJpcaT9bDx2cKBqg==
 
 read-pkg@^5.2.0:
   version "5.2.0"
