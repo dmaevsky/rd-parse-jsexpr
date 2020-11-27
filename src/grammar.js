@@ -105,6 +105,7 @@ const Grammar = Y(function(Expression) {
   const BitwiseOr = /^\|(?!\|)/;
 
   const BinaryOperatorPrecedence = [
+    '**',
     Any('*', '/', '%'),
     Any('+', '-'),
     Any('>>>', '<<', '>>'),
@@ -117,10 +118,37 @@ const Grammar = Y(function(Expression) {
     '||'
   ];
 
-  const ApplyBinaryOp = (BinaryOp, Expr) => Node(All(Operator(BinaryOp), Expr), ([operator, right]) => ({operator, right}));
-  const ExpressionConstructor = (Expr, BinaryOp) => Node(All(Expr, Star(ApplyBinaryOp(BinaryOp, Expr))),
-    parts => parts.reduce((left, { operator, right }) => ({ type: 'BinaryExpression', left, right, operator })));
+  const associativity = BinaryOp => BinaryOp === '**' ? rightToLeft : leftToRight;
 
+  function leftToRight(parts) {
+    let left = parts[0];
+
+    for (let i = 1; i < parts.length; i += 2) {
+      left = {
+        type: 'BinaryExpression',
+        left,
+        operator: parts[i],
+        right: parts[i + 1],
+      };
+    }
+    return left;
+  }
+
+  function rightToLeft(parts) {
+    let right = parts[parts.length - 1];
+
+    for (let i = parts.length - 2; i >= 0; i -= 2) {
+      right = {
+        type: 'BinaryExpression',
+        left: parts[i - 1],
+        operator: parts[i],
+        right,
+      };
+    }
+    return right;
+  }
+
+  const ExpressionConstructor = (Expr, BinaryOp) => Node(All(Expr, Star(All(Operator(BinaryOp), Expr))), associativity(BinaryOp));
   const LogicalORExpression = BinaryOperatorPrecedence.reduce(ExpressionConstructor, UnaryExpression);
 
   const ConditionalExpression = Node(All(LogicalORExpression, Optional(All('?', Expression, ':', Expression))),

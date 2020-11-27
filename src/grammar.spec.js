@@ -34,6 +34,21 @@ test('a number literal', t => {
   t.deepEqual(ast, { type: 'Literal', value: 500, raw: '5e2' });
 });
 
+test('operator precedence', t => {
+  const ast = parser('x*x + y*y');
+  t.snapshot(ast);
+});
+
+test('left associativity', t => {
+  const ast = parser('a + b - c');
+  t.snapshot(ast);
+});
+
+test('exponentiation operator (right associativity)', t => {
+  const ast = parser('a ** b ** c / 2');
+  t.snapshot(ast);
+});
+
 test('ArrowFunction, simple', t => {
   const ast = parser('x => x * x');
   t.is(ast.type, 'ArrowFunction');
