@@ -15,7 +15,7 @@ export const StringToken = Any(
 );
 
 // Turn off ignore whitespace for InterpolationChunk
-export const InterpolationChunkToken = Ignore(null, /^((?:\$(?!{)|\\.|[^`$\\])+)/);
+export const InterpolationChunkToken = /^((?:\$(?!{)|\\.|[^`$\\])+)/;
 
 export const NumericToken = Any(
   /^((?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\b/,   // decimal
@@ -28,10 +28,14 @@ export const BooleanToken = /^(true|false)\b/;
 
 export const IdentifierToken = /^([a-zA-Z_$][a-zA-Z0-9_$]*)/;
 
+const srcMap = (obj, $, $next) => Object.defineProperties(obj, {
+  pos: { writable: true, configurable: true, value: $.pos },
+  text: { writable: true, configurable: true, value: ($.text || $next.text).slice($.pos, $next.pos) },
+});
+
 const Grammar = Y(function(Expression) {
 
-  const Identifier = Node(IdentifierToken, ([name], $) => Object.defineProperty({ type: 'Identifier', name },
-    'pos', { writable: true, configurable: true, value: $.pos }));
+  const Identifier = Node(IdentifierToken, ([name]) => ({ type: 'Identifier', name }));
 
   // Literals
   const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
@@ -43,7 +47,7 @@ const Grammar = Y(function(Expression) {
   const InterpolationChunk = Node(InterpolationChunkToken, ([raw]) => ['chunks', eval('`' + raw + '`')]);
   const TemplateInlineExpression = Node(All('${', Expression, '}'), ([expression]) => ['expressions', expression]);
 
-  const TemplateLiteral = Node(All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`'),
+  const TemplateLiteral = Node(Ignore(null, All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`')),
     parts => ({ type: 'TemplateLiteral', parts }));
 
   const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, TemplateLiteral /*, RegExLiteral*/);
@@ -69,36 +73,42 @@ const Grammar = Y(function(Expression) {
   // Object literal
 
   const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([expression]) => ({ type: 'ComputedProperty', expression }));
-  const PropertyName = Any(Identifier, StringLiteral, NumericLiteral, ComputedPropertyName);
-  const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), Identifier), ([name, value]) => ({name, value: value || name}));
+  const PropertyName = Any(IdentifierToken, StringLiteral, NumericLiteral, ComputedPropertyName);
+  const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), Identifier),
+    ([name, value]) => ({ name: value ? name : name.name, value: value || Object.assign(name, { shortNotation: true }) })
+  );
   const PropertyDefinitions = All(PropertyDefinition, Star(All(',', PropertyDefinition)));
   const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(',')) );
   const ObjectLiteral = Node(All('{', PropertyDefinitionList, '}'), properties => ({ type: 'ObjectLiteral', properties}));
 
   // Primary expression
-  const PrimaryExpression = Any(Literal, Identifier, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')'));
+  const PrimaryExpression = Node(Any(Literal, Identifier, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')')),
+    ([expr], ...$$) => srcMap(expr, ...$$));
 
   // Member expression
   const ArgumentsList = All(Element, Star(All(',', Element)));
   const Arguments = Node(All('(', Optional(All(ArgumentsList, Optional(','))), ')'), args => ({ args }));
 
-  const PropertyAccess = Any(All('.', Identifier), ComputedPropertyName);
-  const MemberExpression = Node(All(PrimaryExpression, Star(Any(PropertyAccess, Arguments))),
-    parts => parts.reduce((acc, part) => ( part.args  ?
-      { type: 'CallExpression', callee: acc, arguments: part.args } :
-      { type: 'MemberExpression', object: acc, property: part }
-  )));
+  const PropertyAccess = Any(All('.', IdentifierToken), ComputedPropertyName);
+  const PropertyAccessOrArguments = Node(Any(PropertyAccess, Arguments), ([part], _, $next) => ({ part, $next }));
 
-  const NewExpression = Node(All('new', MemberExpression), ([expression]) => ({ type: 'NewExpression', expression }));
+  const MemberExpression = Node(All(PrimaryExpression, Star(PropertyAccessOrArguments)),
+    (parts, $) => parts.reduce((acc, { part, $next }) => srcMap(part.args ?
+      { type: 'CallExpression', callee: acc, arguments: part.args } :
+      { type: 'MemberExpression', object: acc, property: part },
+      $, $next)
+  ));
+
+  const NewExpression = Node(All('new', MemberExpression), ([expression], ...$$) => srcMap({ type: 'NewExpression', expression }, ...$$));
   const LeftHandSideExpression = Any(NewExpression, MemberExpression);
 
   // Unary expressions
 
-  const Operator = Rule => Node(Rule, (_, $, $next) => $.text.substring($.pos, $next.pos));
+  const Operator = Rule => Node(Rule, (_, $, $next) => ({ $, operator: $.text.substring($.pos, $next.pos) }));
 
   const UnaryOperator = Operator(Any('+', '-', '~', '!', 'typeof'));
   const UnaryExpression = Node(All(Star(UnaryOperator), LeftHandSideExpression),
-    parts => parts.reduceRight((argument, operator) => ({ type: 'UnaryExpression', argument, operator })));
+    (parts, _, $next) => parts.reduceRight((argument, { $, operator }) => srcMap({ type: 'UnaryExpression', argument, operator }, $, $next)));
 
   // Binary expressions
   const BitwiseAnd = /^&(?!&)/;
@@ -120,30 +130,30 @@ const Grammar = Y(function(Expression) {
 
   const associativity = BinaryOp => BinaryOp === '**' ? rightToLeft : leftToRight;
 
-  function leftToRight(parts) {
+  function leftToRight(parts, $) {
     let left = parts[0];
 
     for (let i = 1; i < parts.length; i += 2) {
-      left = {
+      const [operator, right] = [parts[i].operator, parts[i + 1]];
+
+      left = srcMap({
         type: 'BinaryExpression',
-        left,
-        operator: parts[i],
-        right: parts[i + 1],
-      };
+        left, operator, right
+      }, $, { pos: right.pos + right.text.length });
     }
     return left;
   }
 
-  function rightToLeft(parts) {
+  function rightToLeft(parts, _, $next) {
     let right = parts[parts.length - 1];
 
     for (let i = parts.length - 2; i >= 0; i -= 2) {
-      right = {
+      const [left, operator] = [parts[i - 1], parts[i].operator];
+
+      right = srcMap({
         type: 'BinaryExpression',
-        left: parts[i - 1],
-        operator: parts[i],
-        right,
-      };
+        left, operator, right
+      }, { pos: left.pos }, $next);
     }
     return right;
   }
@@ -170,7 +180,7 @@ const Grammar = Y(function(Expression) {
 
   const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
 
-  return IgnoreWhitespace(Any(ArrowFunction, ConditionalExpression));
+  return IgnoreWhitespace(Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$)));
 });
 
 export default Grammar;

@@ -1,6 +1,6 @@
 {
   "name": "rd-parse-jsexpr",
-  "version": "1.1.7",
+  "version": "2.0.0",
   "description": "ES6 expression grammar for use with rd-parse parser generator",
   "main": "./src/grammar.js",
   "module": "./src/grammar.js",
@@ -31,6 +31,6 @@
     "esm": "^3.2.25"
   },
   "dependencies": {
-    "rd-parse": "^3.2.3"
+    "rd-parse": "dmaevsky/rd-parse#7aac06ff34dd4d91237e00e5eba94c2d99ee675a"
   }
 }

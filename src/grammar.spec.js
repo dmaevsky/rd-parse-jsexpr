@@ -64,7 +64,6 @@ test('ArrowFunction, with initializer and rest parameter', t => {
   t.is(ast.parameters.bound.length, 1);
   t.deepEqual(ast.parameters.bound[0].initializer, { type: 'Literal', value: 1, raw: '1' });
   t.deepEqual(ast.parameters.rest, { type: 'Identifier', name: 'a' });
-  t.is(ast.parameters.rest.pos, 11);
 });
 
 test('template literals', t => {
@@ -80,4 +79,49 @@ test('template literals', t => {
 test('template litarals 2', t => {
   const input = '`Mismatched timing labels (expected ${this.current_timing.label}, got ${label})`';
   t.snapshot(parser(input));
+});
+
+test('object literal short notation', t => {
+  const input = '{ foo }';
+  t.snapshot(parser(input));
+});
+
+test('pos and text for member and call expressions', t => {
+  const input = 'obj.method(a, b)';
+  const ast = parser(' ' + input + ' ');
+
+  t.is(ast.type, 'CallExpression');
+  t.is(ast.pos, 1);
+  t.is(ast.text, input);
+  t.is(ast.callee.type, 'MemberExpression');
+  t.is(ast.callee.pos, 1);
+  t.is(ast.callee.text, 'obj.method');
+  t.is(ast.callee.object.type, 'Identifier');
+  t.is(ast.callee.object.pos, 1);
+  t.is(ast.callee.object.text, 'obj');
+});
+
+test('pos and text for unary expressions', t => {
+  const input = 'typeof ~foo';
+  const ast = parser(input);
+
+  t.is(ast.type, 'UnaryExpression');
+  t.is(ast.operator, 'typeof');
+  t.is(ast.argument.type, 'UnaryExpression');
+  t.is(ast.argument.operator, '~');
+  t.is(ast.argument.pos, 7);
+  t.is(ast.argument.text, '~foo');
+});
+
+test('pos and text for binary expressions', t => {
+  const input = 'a + 2 * b';
+  const ast = parser(input);
+
+  t.is(ast.type, 'BinaryExpression');
+  t.is(ast.operator, '+');
+  t.is(ast.text, input);
+  t.is(ast.right.type, 'BinaryExpression');
+  t.is(ast.right.operator, '*');
+  t.is(ast.right.pos, 4);
+  t.is(ast.right.text, '2 * b');
 });
