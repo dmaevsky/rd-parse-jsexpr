@@ -53,7 +53,7 @@ test('ArrowFunction, simple', t => {
   const ast = parser('x => x * x');
   t.is(ast.type, 'ArrowFunction');
   t.is(ast.parameters.bound.length, 1);
-  t.deepEqual(ast.parameters.bound[0], { type: 'Identifier', name: 'x' });
+  t.deepEqual(ast.parameters.bound[0], { type: 'BoundName', name: 'x' });
   t.is(ast.parameters.rest, undefined);
   t.is(ast.result.type, 'BinaryExpression');
 });
@@ -63,7 +63,7 @@ test('ArrowFunction, with initializer and rest parameter', t => {
   t.is(ast.type, 'ArrowFunction');
   t.is(ast.parameters.bound.length, 1);
   t.deepEqual(ast.parameters.bound[0].initializer, { type: 'Literal', value: 1, raw: '1' });
-  t.deepEqual(ast.parameters.rest, { type: 'Identifier', name: 'a' });
+  t.deepEqual(ast.parameters.rest, { type: 'BoundName', name: 'a' });
 });
 
 test('template literals', t => {
@@ -124,4 +124,15 @@ test('pos and text for binary expressions', t => {
   t.is(ast.right.operator, '*');
   t.is(ast.right.pos, 4);
   t.is(ast.right.text, '2 * b');
+});
+
+test('pos and text for bound names', t => {
+  const input = '(a, ...r) => a + r[0]';
+  const ast = parser(input);
+
+  t.is(ast.type, 'ArrowFunction');
+  t.is(ast.parameters.bound[0].type, 'BoundName');
+  t.is(ast.parameters.bound[0].pos, 1);
+  t.is(ast.parameters.rest.type, 'BoundName');
+  t.is(ast.parameters.rest.pos, 7);
 });

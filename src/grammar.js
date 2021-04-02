@@ -165,15 +165,17 @@ const Grammar = Y(function(Expression) {
     ([test, consequent, alternate]) => consequent ? ({ type: 'ConditionalExpression', test, consequent, alternate }) : test);
 
   // Arrow functions
-  const BindingElement = Node(All(Identifier, Optional(All('=', Expression))),   // Do not support destructuring just yet
+  const BoundName = Node(IdentifierToken, ([name], ...$$) => srcMap({ type: 'BoundName', name }, ...$$));
+
+  const BindingElement = Node(All(BoundName, Optional(All('=', Expression))),   // Do not support destructuring just yet
     ([param, initializer]) => initializer ? Object.assign(param, {initializer}) : param);
   const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
-  const RestElement = Node(All('...', Identifier), ([rest]) => ({rest}));
+  const RestElement = Node(All('...', BoundName), ([rest]) => ({rest}));
 
   const FormalParameters = Node(All('(', Any( All(FormalsList, Optional(All(',', RestElement))), Optional(RestElement) ), ')'),
     parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [] }));
 
-  const ArrowParameters = Node(Any(Identifier, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
+  const ArrowParameters = Node(Any(BoundName, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
 
   const FoolSafe = Node('{', () => { throw new Error('Object literal returned from the arrow function needs to be enclosed in ()'); });
   const ArrowResult = Any(FoolSafe, Expression);
