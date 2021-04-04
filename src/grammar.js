@@ -168,7 +168,7 @@ const Grammar = Y(function(Expression) {
   const BoundName = Node(IdentifierToken, ([name], ...$$) => srcMap({ type: 'BoundName', name }, ...$$));
 
   const BindingElement = Node(All(BoundName, Optional(All('=', Expression))),   // Do not support destructuring just yet
-    ([param, initializer]) => initializer ? Object.assign(param, {initializer}) : param);
+    ([binding, initializer]) => initializer ? { binding, initializer } : { binding });
   const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
   const RestElement = Node(All('...', BoundName), ([rest]) => ({rest}));
 

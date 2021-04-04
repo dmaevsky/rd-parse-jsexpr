@@ -131,8 +131,8 @@ test('pos and text for bound names', t => {
   const ast = parser(input);
 
   t.is(ast.type, 'ArrowFunction');
-  t.is(ast.parameters.bound[0].type, 'BoundName');
-  t.is(ast.parameters.bound[0].pos, 1);
+  t.is(ast.parameters.bound[0].binding.type, 'BoundName');
+  t.is(ast.parameters.bound[0].binding.pos, 1);
   t.is(ast.parameters.rest.type, 'BoundName');
   t.is(ast.parameters.rest.pos, 7);
 });
