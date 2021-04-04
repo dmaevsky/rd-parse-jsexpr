@@ -71,11 +71,11 @@ const Grammar = Y(function(Expression) {
     leafs => leafs.length > 1 ? { type: 'CompoundExpression', leafs } : leafs[0]);
 
   // Object literal
-
+  const ShortNotation = Node(Identifier, ([expr], ...$$) => srcMap({ ...expr, shortNotation: true }, ...$$));
   const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([expression]) => ({ type: 'ComputedProperty', expression }));
   const PropertyName = Any(IdentifierToken, StringLiteral, NumericLiteral, ComputedPropertyName);
-  const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), Identifier),
-    ([name, value]) => ({ name: value ? name : name.name, value: value || Object.assign(name, { shortNotation: true }) })
+  const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), ShortNotation),
+    ([name, value]) => ({ name: value ? name : name.name, value: value || name })
   );
   const PropertyDefinitions = All(PropertyDefinition, Star(All(',', PropertyDefinition)));
   const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(',')) );

@@ -83,7 +83,12 @@ test('template litarals 2', t => {
 
 test('object literal short notation', t => {
   const input = '{ foo }';
-  t.snapshot(parser(input));
+  const ast = parser(input);
+  t.snapshot(ast);
+
+  t.is(ast.properties[0].name, 'foo');
+  t.is(ast.properties[0].value.pos, 2);
+  t.is(ast.properties[0].value.text, 'foo');
 });
 
 test('pos and text for member and call expressions', t => {
