@@ -45,7 +45,7 @@ const Grammar = Y(function(Expression) {
   // const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
 
   const InterpolationChunk = Node(InterpolationChunkToken, ([raw]) => ['chunks', eval('`' + raw + '`')]);
-  const TemplateInlineExpression = Node(All('${', Expression, '}'), ([expression]) => ['expressions', expression]);
+  const TemplateInlineExpression = Node(All('${', IgnoreWhitespace(Expression), '}'), ([expression]) => ['expressions', expression]);
 
   const TemplateLiteral = Node(Ignore(null, All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`')),
     parts => ({ type: 'TemplateLiteral', parts }));
@@ -188,7 +188,7 @@ const Grammar = Y(function(Expression) {
 
   const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
 
-  return IgnoreWhitespace(Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$)));
+  return Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$));
 });
 
-export default Grammar;
+export default IgnoreWhitespace(Grammar);

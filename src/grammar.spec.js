@@ -162,3 +162,12 @@ test('new expression + call expression', t => {
   t.is(ast.callee.object.ctor.type, 'Identifier');
   t.is(ast.callee.object.ctor.pos, 4);
 });
+
+test('pos and text for arrow functions', t => {
+  const input = ' () => x ';
+  const ast = parser(input);
+
+  t.is(ast.type, 'ArrowFunction');
+  t.is(ast.pos, 1);
+  t.is(ast.text, '() => x');
+});
