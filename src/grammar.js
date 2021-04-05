@@ -106,7 +106,7 @@ const Grammar = Y(function(Expression) {
 
   const Operator = Rule => Node(Rule, (_, $, $next) => ({ $, operator: $.text.substring($.pos, $next.pos) }));
 
-  const UnaryOperator = Operator(Any('+', '-', '~', '!', 'typeof'));
+  const UnaryOperator = Operator(Any('+', '-', '~', '!', /^typeof\b/));
   const UnaryExpression = Node(All(Star(UnaryOperator), LeftHandSideExpression),
     (parts, _, $next) => parts.reduceRight((argument, { $, operator }) => srcMap({ type: 'UnaryExpression', argument, operator }, $, $next)));
 
@@ -119,7 +119,7 @@ const Grammar = Y(function(Expression) {
     Any('*', '/', '%'),
     Any('+', '-'),
     Any('>>>', '<<', '>>'),
-    Any('<=', '>=', '<', '>', 'instanceof', 'in'),
+    Any('<=', '>=', '<', '>', /^instanceof\b/, /^in\b/),
     Any('===', '!==', '==', '!='),
     BitwiseAnd,
     '^',
