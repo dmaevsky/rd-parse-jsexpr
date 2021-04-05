@@ -141,3 +141,24 @@ test('pos and text for bound names', t => {
   t.is(ast.parameters.rest.type, 'BoundName');
   t.is(ast.parameters.rest.pos, 7);
 });
+
+test('new expression + memeber expression', t => {
+  const input = 'new Array(3).length';
+  const ast = parser(input);
+
+  t.is(ast.type, 'MemberExpression');
+  t.is(ast.object.type, 'NewExpression');
+  t.is(ast.object.ctor.type, 'Identifier');
+  t.is(ast.object.ctor.pos, 4);
+});
+
+test('new expression + call expression', t => {
+  const input = 'new Array(3).map((_, i) => i)';
+  const ast = parser(input);
+
+  t.is(ast.type, 'CallExpression');
+  t.is(ast.callee.type, 'MemberExpression');
+  t.is(ast.callee.object.type, 'NewExpression');
+  t.is(ast.callee.object.ctor.type, 'Identifier');
+  t.is(ast.callee.object.ctor.pos, 4);
+});

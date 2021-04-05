@@ -92,22 +92,28 @@ const Grammar = Y(function(Expression) {
   const PropertyAccess = Any(All('.', IdentifierToken), ComputedPropertyName);
   const PropertyAccessOrArguments = Node(Any(PropertyAccess, Arguments), ([part], _, $next) => ({ part, $next }));
 
-  const MemberExpression = Node(All(PrimaryExpression, Star(PropertyAccessOrArguments)),
-    (parts, $) => parts.reduce((acc, { part, $next }) => srcMap(part.args ?
-      { type: 'CallExpression', callee: acc, arguments: part.args } :
-      { type: 'MemberExpression', object: acc, property: part },
-      $, $next)
-  ));
+  const MemberExpression = Node(All(Optional(/^new\b/), PrimaryExpression, Star(PropertyAccessOrArguments)),
+    (parts, $, $last) => {
+      const result = parts.reduce((acc, { part, $next }) => {
+        if (part.args) {
+          return srcMap($.pos !== acc.pos ?
+            { type: 'NewExpression', ctor: acc, arguments: part.args } :
+            { type: 'CallExpression', callee: acc, arguments: part.args },
+            $, $next);
+        }
+        return srcMap({ type: 'MemberExpression', object: acc, property: part }, { pos: acc.pos }, $next);
+      });
 
-  const NewExpression = Node(All('new', MemberExpression), ([expression], ...$$) => srcMap({ type: 'NewExpression', expression }, ...$$));
-  const LeftHandSideExpression = Any(NewExpression, MemberExpression);
+      if (result.pos === $.pos) return result;
+      return srcMap({ type: 'NewExpression', ctor: result, arguments: [] }, $, $last);
+    }
+  );
 
   // Unary expressions
-
   const Operator = Rule => Node(Rule, (_, $, $next) => ({ $, operator: $.text.substring($.pos, $next.pos) }));
 
   const UnaryOperator = Operator(Any('+', '-', '~', '!', /^typeof\b/));
-  const UnaryExpression = Node(All(Star(UnaryOperator), LeftHandSideExpression),
+  const UnaryExpression = Node(All(Star(UnaryOperator), MemberExpression),
     (parts, _, $next) => parts.reduceRight((argument, { $, operator }) => srcMap({ type: 'UnaryExpression', argument, operator }, $, $next)));
 
   // Binary expressions
