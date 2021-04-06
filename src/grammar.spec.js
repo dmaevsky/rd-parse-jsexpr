@@ -53,7 +53,7 @@ test('ArrowFunction, simple', t => {
   const ast = parser('x => x * x');
   t.is(ast.type, 'ArrowFunction');
   t.is(ast.parameters.bound.length, 1);
-  t.deepEqual(ast.parameters.bound[0], { type: 'Identifier', name: 'x' });
+  t.deepEqual(ast.parameters.bound[0], { type: 'BoundName', name: 'x' });
   t.is(ast.parameters.rest, undefined);
   t.is(ast.result.type, 'BinaryExpression');
 });
@@ -63,8 +63,7 @@ test('ArrowFunction, with initializer and rest parameter', t => {
   t.is(ast.type, 'ArrowFunction');
   t.is(ast.parameters.bound.length, 1);
   t.deepEqual(ast.parameters.bound[0].initializer, { type: 'Literal', value: 1, raw: '1' });
-  t.deepEqual(ast.parameters.rest, { type: 'Identifier', name: 'a' });
-  t.is(ast.parameters.rest.pos, 11);
+  t.deepEqual(ast.parameters.rest, { type: 'BoundName', name: 'a' });
 });
 
 test('template literals', t => {
@@ -80,4 +79,95 @@ test('template literals', t => {
 test('template litarals 2', t => {
   const input = '`Mismatched timing labels (expected ${this.current_timing.label}, got ${label})`';
   t.snapshot(parser(input));
+});
+
+test('object literal short notation', t => {
+  const input = '{ foo }';
+  const ast = parser(input);
+  t.snapshot(ast);
+
+  t.is(ast.properties[0].name, 'foo');
+  t.is(ast.properties[0].value.pos, 2);
+  t.is(ast.properties[0].value.text, 'foo');
+});
+
+test('pos and text for member and call expressions', t => {
+  const input = 'obj.method(a, b)';
+  const ast = parser(' ' + input + ' ');
+
+  t.is(ast.type, 'CallExpression');
+  t.is(ast.pos, 1);
+  t.is(ast.text, input);
+  t.is(ast.callee.type, 'MemberExpression');
+  t.is(ast.callee.pos, 1);
+  t.is(ast.callee.text, 'obj.method');
+  t.is(ast.callee.object.type, 'Identifier');
+  t.is(ast.callee.object.pos, 1);
+  t.is(ast.callee.object.text, 'obj');
+});
+
+test('pos and text for unary expressions', t => {
+  const input = 'typeof ~foo';
+  const ast = parser(input);
+
+  t.is(ast.type, 'UnaryExpression');
+  t.is(ast.operator, 'typeof');
+  t.is(ast.argument.type, 'UnaryExpression');
+  t.is(ast.argument.operator, '~');
+  t.is(ast.argument.pos, 7);
+  t.is(ast.argument.text, '~foo');
+});
+
+test('pos and text for binary expressions', t => {
+  const input = 'a + 2 * b';
+  const ast = parser(input);
+
+  t.is(ast.type, 'BinaryExpression');
+  t.is(ast.operator, '+');
+  t.is(ast.text, input);
+  t.is(ast.right.type, 'BinaryExpression');
+  t.is(ast.right.operator, '*');
+  t.is(ast.right.pos, 4);
+  t.is(ast.right.text, '2 * b');
+});
+
+test('pos and text for bound names', t => {
+  const input = '(a, ...r) => a + r[0]';
+  const ast = parser(input);
+
+  t.is(ast.type, 'ArrowFunction');
+  t.is(ast.parameters.bound[0].binding.type, 'BoundName');
+  t.is(ast.parameters.bound[0].binding.pos, 1);
+  t.is(ast.parameters.rest.type, 'BoundName');
+  t.is(ast.parameters.rest.pos, 7);
+});
+
+test('new expression + memeber expression', t => {
+  const input = 'new Array(3).length';
+  const ast = parser(input);
+
+  t.is(ast.type, 'MemberExpression');
+  t.is(ast.object.type, 'NewExpression');
+  t.is(ast.object.ctor.type, 'Identifier');
+  t.is(ast.object.ctor.pos, 4);
+});
+
+test('new expression + call expression', t => {
+  const input = 'new Array(3).map((_, i) => i)';
+  const ast = parser(input);
+
+  t.is(ast.type, 'CallExpression');
+  t.is(ast.callee.type, 'MemberExpression');
+  t.is(ast.callee.object.type, 'NewExpression');
+  t.is(ast.callee.object.ctor.type, 'Identifier');
+  t.is(ast.callee.object.ctor.pos, 4);
+});
+
+test('pos and text for arrow functions', t => {
+  const input = ' () => x ';
+  const ast = parser(input);
+
+  t.is(ast.type, 'ArrowFunction');
+  t.is(ast.pos, 1);
+  t.is(ast.text, '() => x');
 });
