@@ -1460,10 +1460,10 @@ rc@^1.2.8:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-rd-parse@^3.3.0:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/rd-parse/-/rd-parse-3.3.0.tgz#d8bf98a9e4f8b60e77b92a7207b97ced40937f03"
-  integrity sha512-uDVqEvTtml1cUVbXkRZVpK22zcEBEOZQ91LCPgsBiTZS+F2Md6xFYMTUI/yp6I1wp85ZVSu8yv9xSHkBN9I+CQ==
+rd-parse@^3.3.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/rd-parse/-/rd-parse-3.3.1.tgz#1c9330665e09e044eee111231d5a11cb1f7b1b38"
+  integrity sha512-hfIp5pJX8VQ4AcgJ/d7C7ksOMTJWbYYwd3ejUaHz1oOZwzNI8CXy/OyQHdemh7Wr8cQ5d0NMFdC4S1/Hl4IDfA==
 
 read-pkg@^5.2.0:
   version "5.2.0"
