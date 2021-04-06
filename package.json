@@ -31,6 +31,6 @@
     "esm": "^3.2.25"
   },
   "dependencies": {
-    "rd-parse": "dmaevsky/rd-parse#7aac06ff34dd4d91237e00e5eba94c2d99ee675a"
+    "rd-parse": "^3.3.0"
   }
 }

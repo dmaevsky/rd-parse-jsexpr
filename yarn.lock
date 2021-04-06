@@ -1460,9 +1460,10 @@ rc@^1.2.8:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-rd-parse@dmaevsky/rd-parse#7aac06ff34dd4d91237e00e5eba94c2d99ee675a:
+rd-parse@^3.3.0:
   version "3.3.0"
-  resolved "https://codeload.github.com/dmaevsky/rd-parse/tar.gz/7aac06ff34dd4d91237e00e5eba94c2d99ee675a"
+  resolved "https://registry.yarnpkg.com/rd-parse/-/rd-parse-3.3.0.tgz#d8bf98a9e4f8b60e77b92a7207b97ced40937f03"
+  integrity sha512-uDVqEvTtml1cUVbXkRZVpK22zcEBEOZQ91LCPgsBiTZS+F2Md6xFYMTUI/yp6I1wp85ZVSu8yv9xSHkBN9I+CQ==
 
 read-pkg@^5.2.0:
   version "5.2.0"
