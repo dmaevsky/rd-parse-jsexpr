@@ -1,7 +1,7 @@
 import test from 'ava';
 
 import Parser from 'rd-parse';
-import Grammar from './grammar';
+import Grammar from './grammar.js';
 
 const parser = Parser(Grammar);
 

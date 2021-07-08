@@ -167,7 +167,7 @@ astral-regex@^2.0.0:
   resolved "https://registry.yarnpkg.com/astral-regex/-/astral-regex-2.0.0.tgz#483143c567aeed4785759c0865786dc77d7d2e31"
   integrity sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==
 
-ava@^3.6.0:
+ava@^3.15.0:
   version "3.15.0"
   resolved "https://registry.yarnpkg.com/ava/-/ava-3.15.0.tgz#a239658ab1de8a29a243cc902e6b42e4574de2f0"
   integrity sha512-HGAnk1SHPk4Sx6plFAUkzV/XC1j9+iQhOzt4vBly18/yo0AV8Oytx7mtJd/CR8igCJ5p160N/Oo/cNJi2uSeWA==
@@ -646,11 +646,6 @@ escape-string-regexp@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz#14ba83a5d373e3d311e5afca29cf5bfad965bf34"
   integrity sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==
-
-esm@^3.2.25:
-  version "3.2.25"
-  resolved "https://registry.yarnpkg.com/esm/-/esm-3.2.25.tgz#342c18c29d56157688ba5ce31f8431fbb795cc10"
-  integrity sha512-U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==
 
 esprima@^4.0.0:
   version "4.0.1"
@@ -1460,10 +1455,10 @@ rc@^1.2.8:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-rd-parse@^3.3.1:
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/rd-parse/-/rd-parse-3.3.1.tgz#1c9330665e09e044eee111231d5a11cb1f7b1b38"
-  integrity sha512-hfIp5pJX8VQ4AcgJ/d7C7ksOMTJWbYYwd3ejUaHz1oOZwzNI8CXy/OyQHdemh7Wr8cQ5d0NMFdC4S1/Hl4IDfA==
+rd-parse@^3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/rd-parse/-/rd-parse-3.4.0.tgz#ed73494216c04353dc3106b670e5a0b2abeaf286"
+  integrity sha512-edfqu/TL96tJQi4yX8eolEZ2hkdUGOQDl/l556FKpkYnhDVTzG0wSTIc1Z9HS6Y+slto3GRAvypG277+0AO0iQ==
 
 read-pkg@^5.2.0:
   version "5.2.0"
