@@ -35,161 +35,159 @@ const srcMap = (obj, $, $next) => Object.defineProperties(obj, {
 
 const Expression = $ => Grammar($);
 
+const Identifier = Node(IdentifierToken, ([name]) => ({ type: 'Identifier', name }));
 
-  const Identifier = Node(IdentifierToken, ([name]) => ({ type: 'Identifier', name }));
+// Literals
+const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
+const NumericLiteral = Node(NumericToken, ([raw]) => ({ type: 'Literal', value: +raw, raw }));
+const NullLiteral = Node(NullToken, ([raw]) => ({ type: 'Literal', value: null, raw }));
+const BooleanLiteral = Node(BooleanToken, ([raw]) => ({ type: 'Literal', value: raw === 'true', raw }));
+// const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
 
-  // Literals
-  const StringLiteral = Node(StringToken, ([raw]) => ({ type: 'Literal', value: eval(raw), raw }));
-  const NumericLiteral = Node(NumericToken, ([raw]) => ({ type: 'Literal', value: +raw, raw }));
-  const NullLiteral = Node(NullToken, ([raw]) => ({ type: 'Literal', value: null, raw }));
-  const BooleanLiteral = Node(BooleanToken, ([raw]) => ({ type: 'Literal', value: raw === 'true', raw }));
-  // const RegExLiteral = Node(RegExToken, ([raw, flags]) => ({ type: 'Literal', value: new RegExp(raw, flags), raw: `/${raw}/${flags||''}` }));
+const InterpolationChunk = Node(InterpolationChunkToken, ([raw]) => ['chunks', eval('`' + raw + '`')]);
+const TemplateInlineExpression = Node(All('${', IgnoreWhitespace(Expression), '}'), ([expression]) => ['expressions', expression]);
 
-  const InterpolationChunk = Node(InterpolationChunkToken, ([raw]) => ['chunks', eval('`' + raw + '`')]);
-  const TemplateInlineExpression = Node(All('${', IgnoreWhitespace(Expression), '}'), ([expression]) => ['expressions', expression]);
+const TemplateLiteral = Node(Ignore(null, All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`')),
+  parts => ({ type: 'TemplateLiteral', parts }));
 
-  const TemplateLiteral = Node(Ignore(null, All('`', Star(Any(InterpolationChunk, TemplateInlineExpression)), '`')),
-    parts => ({ type: 'TemplateLiteral', parts }));
+const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, TemplateLiteral /*, RegExLiteral*/);
 
-  const Literal = Any(StringLiteral, NumericLiteral, NullLiteral, BooleanLiteral, TemplateLiteral /*, RegExLiteral*/);
+// Array literal
 
-  // Array literal
+const EmptyElement = Node(',', () => ({ type: 'EmptyElement'}));
+const Elision = All(',', Star(EmptyElement));
+const SpreadElement = Node(All('...', Expression), ([expression]) => ({ type: 'SpreadElement', expression }));
+const Element = Any(SpreadElement, Expression);
 
-  const EmptyElement = Node(',', () => ({ type: 'EmptyElement'}));
-  const Elision = All(',', Star(EmptyElement));
-  const SpreadElement = Node(All('...', Expression), ([expression]) => ({ type: 'SpreadElement', expression }));
-  const Element = Any(SpreadElement, Expression);
+const ElementList = All(Star(EmptyElement), Element, Star(All(Elision, Element)));
 
-  const ElementList = All(Star(EmptyElement), Element, Star(All(Elision, Element)));
+const ArrayLiteral =	Node(All('[', Any(
+  All(Star(EmptyElement), ']'),
+  All(ElementList, Optional(Elision), ']'),
+)), elements => ({ type: 'ArrayLiteral', elements }));
 
-  const ArrayLiteral =	Node(All('[', Any(
-    All(Star(EmptyElement), ']'),
-    All(ElementList, Optional(Elision), ']'),
-  )), elements => ({ type: 'ArrayLiteral', elements }));
+// Compound expression
+const CompoundExpression = Node(All(Expression, Star(All(',', Expression))),
+  leafs => leafs.length > 1 ? { type: 'CompoundExpression', leafs } : leafs[0]);
 
-  // Compound expression
-  const CompoundExpression = Node(All(Expression, Star(All(',', Expression))),
-    leafs => leafs.length > 1 ? { type: 'CompoundExpression', leafs } : leafs[0]);
+// Object literal
+const ShortNotation = Node(Identifier, ([expr], ...$$) => srcMap({ ...expr, shortNotation: true }, ...$$));
+const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([expression]) => ({ type: 'ComputedProperty', expression }));
+const PropertyName = Any(IdentifierToken, StringLiteral, NumericLiteral, ComputedPropertyName);
+const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), ShortNotation),
+  ([name, value]) => ({ name: value ? name : name.name, value: value || name })
+);
+const PropertyDefinitions = All(PropertyDefinition, Star(All(',', PropertyDefinition)));
+const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(',')) );
+const ObjectLiteral = Node(All('{', PropertyDefinitionList, '}'), properties => ({ type: 'ObjectLiteral', properties}));
 
-  // Object literal
-  const ShortNotation = Node(Identifier, ([expr], ...$$) => srcMap({ ...expr, shortNotation: true }, ...$$));
-  const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([expression]) => ({ type: 'ComputedProperty', expression }));
-  const PropertyName = Any(IdentifierToken, StringLiteral, NumericLiteral, ComputedPropertyName);
-  const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), ShortNotation),
-    ([name, value]) => ({ name: value ? name : name.name, value: value || name })
-  );
-  const PropertyDefinitions = All(PropertyDefinition, Star(All(',', PropertyDefinition)));
-  const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(',')) );
-  const ObjectLiteral = Node(All('{', PropertyDefinitionList, '}'), properties => ({ type: 'ObjectLiteral', properties}));
+// Primary expression
+const PrimaryExpression = Node(Any(Literal, Identifier, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')')),
+  ([expr], ...$$) => srcMap(expr, ...$$));
 
-  // Primary expression
-  const PrimaryExpression = Node(Any(Literal, Identifier, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')')),
-    ([expr], ...$$) => srcMap(expr, ...$$));
+// Member expression
+const ArgumentsList = All(Element, Star(All(',', Element)));
+const Arguments = Node(All('(', Optional(All(ArgumentsList, Optional(','))), ')'), args => ({ args }));
 
-  // Member expression
-  const ArgumentsList = All(Element, Star(All(',', Element)));
-  const Arguments = Node(All('(', Optional(All(ArgumentsList, Optional(','))), ')'), args => ({ args }));
+const PropertyAccess = Any(All('.', IdentifierToken), ComputedPropertyName);
+const PropertyAccessOrArguments = Node(Any(PropertyAccess, Arguments), ([part], _, $next) => ({ part, $next }));
 
-  const PropertyAccess = Any(All('.', IdentifierToken), ComputedPropertyName);
-  const PropertyAccessOrArguments = Node(Any(PropertyAccess, Arguments), ([part], _, $next) => ({ part, $next }));
+const MemberExpression = Node(All(Optional(/^new\b/), PrimaryExpression, Star(PropertyAccessOrArguments)),
+  (parts, $, $last) => {
+    const result = parts.reduce((acc, { part, $next }) => {
+      if (part.args) {
+        return srcMap($.pos !== acc.pos ?
+          { type: 'NewExpression', ctor: acc, arguments: part.args } :
+          { type: 'CallExpression', callee: acc, arguments: part.args },
+          $, $next);
+      }
+      return srcMap({ type: 'MemberExpression', object: acc, property: part }, { pos: acc.pos }, $next);
+    });
 
-  const MemberExpression = Node(All(Optional(/^new\b/), PrimaryExpression, Star(PropertyAccessOrArguments)),
-    (parts, $, $last) => {
-      const result = parts.reduce((acc, { part, $next }) => {
-        if (part.args) {
-          return srcMap($.pos !== acc.pos ?
-            { type: 'NewExpression', ctor: acc, arguments: part.args } :
-            { type: 'CallExpression', callee: acc, arguments: part.args },
-            $, $next);
-        }
-        return srcMap({ type: 'MemberExpression', object: acc, property: part }, { pos: acc.pos }, $next);
-      });
-
-      if (result.pos === $.pos) return result;
-      return srcMap({ type: 'NewExpression', ctor: result, arguments: [] }, $, $last);
-    }
-  );
-
-  // Unary expressions
-  const Operator = Rule => Node(Rule, (_, $, $next) => ({ $, operator: $.text.substring($.pos, $next.pos) }));
-
-  const UnaryOperator = Operator(Any('+', '-', '~', '!', /^typeof\b/));
-  const UnaryExpression = Node(All(Star(UnaryOperator), MemberExpression),
-    (parts, _, $next) => parts.reduceRight((argument, { $, operator }) => srcMap({ type: 'UnaryExpression', argument, operator }, $, $next)));
-
-  // Binary expressions
-  const BitwiseAnd = /^&(?!&)/;
-  const BitwiseOr = /^\|(?!\|)/;
-
-  const BinaryOperatorPrecedence = [
-    '**',
-    Any('*', '/', '%'),
-    Any('+', '-'),
-    Any('>>>', '<<', '>>'),
-    Any('<=', '>=', '<', '>', /^instanceof\b/, /^in\b/),
-    Any('===', '!==', '==', '!='),
-    BitwiseAnd,
-    '^',
-    BitwiseOr,
-    '&&',
-    '||'
-  ];
-
-  const associativity = BinaryOp => BinaryOp === '**' ? rightToLeft : leftToRight;
-
-  function leftToRight(parts, $) {
-    let left = parts[0];
-
-    for (let i = 1; i < parts.length; i += 2) {
-      const [operator, right] = [parts[i].operator, parts[i + 1]];
-
-      left = srcMap({
-        type: 'BinaryExpression',
-        left, operator, right
-      }, $, { pos: right.pos + right.text.length });
-    }
-    return left;
+    if (result.pos === $.pos) return result;
+    return srcMap({ type: 'NewExpression', ctor: result, arguments: [] }, $, $last);
   }
+);
 
-  function rightToLeft(parts, _, $next) {
-    let right = parts[parts.length - 1];
+// Unary expressions
+const Operator = Rule => Node(Rule, (_, $, $next) => ({ $, operator: $.text.substring($.pos, $next.pos) }));
 
-    for (let i = parts.length - 2; i >= 0; i -= 2) {
-      const [left, operator] = [parts[i - 1], parts[i].operator];
+const UnaryOperator = Operator(Any('+', '-', '~', '!', /^typeof\b/));
+const UnaryExpression = Node(All(Star(UnaryOperator), MemberExpression),
+  (parts, _, $next) => parts.reduceRight((argument, { $, operator }) => srcMap({ type: 'UnaryExpression', argument, operator }, $, $next)));
 
-      right = srcMap({
-        type: 'BinaryExpression',
-        left, operator, right
-      }, { pos: left.pos }, $next);
-    }
-    return right;
+// Binary expressions
+const BitwiseAnd = /^&(?!&)/;
+const BitwiseOr = /^\|(?!\|)/;
+
+const BinaryOperatorPrecedence = [
+  '**',
+  Any('*', '/', '%'),
+  Any('+', '-'),
+  Any('>>>', '<<', '>>'),
+  Any('<=', '>=', '<', '>', /^instanceof\b/, /^in\b/),
+  Any('===', '!==', '==', '!='),
+  BitwiseAnd,
+  '^',
+  BitwiseOr,
+  '&&',
+  '||'
+];
+
+const associativity = BinaryOp => BinaryOp === '**' ? rightToLeft : leftToRight;
+
+function leftToRight(parts, $) {
+  let left = parts[0];
+
+  for (let i = 1; i < parts.length; i += 2) {
+    const [operator, right] = [parts[i].operator, parts[i + 1]];
+
+    left = srcMap({
+      type: 'BinaryExpression',
+      left, operator, right
+    }, $, { pos: right.pos + right.text.length });
   }
+  return left;
+}
 
-  const ExpressionConstructor = (Expr, BinaryOp) => Node(All(Expr, Star(All(Operator(BinaryOp), Expr))), associativity(BinaryOp));
-  const LogicalORExpression = BinaryOperatorPrecedence.reduce(ExpressionConstructor, UnaryExpression);
+function rightToLeft(parts, _, $next) {
+  let right = parts[parts.length - 1];
 
-  const ConditionalExpression = Node(All(LogicalORExpression, Optional(All('?', Expression, ':', Expression))),
-    ([test, consequent, alternate]) => consequent ? ({ type: 'ConditionalExpression', test, consequent, alternate }) : test);
+  for (let i = parts.length - 2; i >= 0; i -= 2) {
+    const [left, operator] = [parts[i - 1], parts[i].operator];
 
-  // Arrow functions
-  const BoundName = Node(IdentifierToken, ([name], ...$$) => srcMap({ type: 'BoundName', name }, ...$$));
+    right = srcMap({
+      type: 'BinaryExpression',
+      left, operator, right
+    }, { pos: left.pos }, $next);
+  }
+  return right;
+}
 
-  const BindingElement = Node(All(BoundName, Optional(All('=', Expression))),   // Do not support destructuring just yet
-    ([binding, initializer]) => initializer ? { binding, initializer } : { binding });
-  const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
-  const RestElement = Node(All('...', BoundName), ([rest]) => ({rest}));
+const ExpressionConstructor = (Expr, BinaryOp) => Node(All(Expr, Star(All(Operator(BinaryOp), Expr))), associativity(BinaryOp));
+const LogicalORExpression = BinaryOperatorPrecedence.reduce(ExpressionConstructor, UnaryExpression);
 
-  const FormalParameters = Node(All('(', Any( All(FormalsList, Optional(All(',', RestElement))), Optional(RestElement) ), ')'),
-    parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [] }));
+const ConditionalExpression = Node(All(LogicalORExpression, Optional(All('?', Expression, ':', Expression))),
+  ([test, consequent, alternate]) => consequent ? ({ type: 'ConditionalExpression', test, consequent, alternate }) : test);
 
-  const ArrowParameters = Node(Any(BoundName, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
+// Arrow functions
+const BoundName = Node(IdentifierToken, ([name], ...$$) => srcMap({ type: 'BoundName', name }, ...$$));
 
-  const FoolSafe = Node('{', () => { throw new Error('Object literal returned from the arrow function needs to be enclosed in ()'); });
-  const ArrowResult = Any(FoolSafe, Expression);
+const BindingElement = Node(All(BoundName, Optional(All('=', Expression))),   // Do not support destructuring just yet
+  ([binding, initializer]) => initializer ? { binding, initializer } : { binding });
+const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
+const RestElement = Node(All('...', BoundName), ([rest]) => ({rest}));
 
-  const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
+const FormalParameters = Node(All('(', Any( All(FormalsList, Optional(All(',', RestElement))), Optional(RestElement) ), ')'),
+  parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [] }));
 
-  const Grammar = Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$));
+const ArrowParameters = Node(Any(BoundName, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
 
+const FoolSafe = Node('{', () => { throw new Error('Object literal returned from the arrow function needs to be enclosed in ()'); });
+const ArrowResult = Any(FoolSafe, Expression);
+
+const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
+
+const Grammar = Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$));
 
 export default IgnoreWhitespace(Grammar);
