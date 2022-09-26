@@ -1,4 +1,4 @@
-import { Ignore, All, Any, Optional, Star, Node, Y } from 'rd-parse';
+import { Ignore, All, Any, Optional, Star, Node } from 'rd-parse';
 
 // An "immutable" pure functional reduction of ECMAScript grammar:
 // loosely based on https://gist.github.com/avdg/1f10e268e484b1284b46
@@ -33,7 +33,8 @@ const srcMap = (obj, $, $next) => Object.defineProperties(obj, {
   text: { writable: true, configurable: true, value: ($.text || $next.text).slice($.pos, $next.pos) },
 });
 
-const Grammar = Y(function(Expression) {
+const Expression = $ => Grammar($);
+
 
   const Identifier = Node(IdentifierToken, ([name]) => ({ type: 'Identifier', name }));
 
@@ -188,7 +189,7 @@ const Grammar = Y(function(Expression) {
 
   const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
 
-  return Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$));
-});
+  const Grammar = Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$));
+
 
 export default IgnoreWhitespace(Grammar);
