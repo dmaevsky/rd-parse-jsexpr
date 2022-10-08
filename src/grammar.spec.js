@@ -171,3 +171,30 @@ test('pos and text for arrow functions', t => {
   t.is(ast.pos, 1);
   t.is(ast.text, '() => x');
 });
+
+test('object literal with spread', t => {
+  const input = '{ foo: 5, ...bar }';
+  const ast = parser(input);
+
+  t.snapshot(ast);
+
+  t.is(ast.type, 'ObjectLiteral');
+  t.is(ast.properties[0].name, 'foo');
+  t.is(ast.properties[1].type, 'SpreadElement');
+  t.is(ast.properties[1].expression.type, 'Identifier');
+  t.is(ast.properties[1].expression.name, 'bar');
+});
+
+test('array literals', t => {
+  const input = '[[,,,], [,5,,], [...a,, 5, ...b]]';
+  const ast = parser(input);
+
+  t.snapshot(ast);
+});
+
+test('destructuring', t => {
+  const input = '([{y: {z1 = 5, ...z2} = {x:6}}, z3, ...z4]) => (z1 * z2.x) * z3 * z4.length';
+  const ast = parser(input);
+
+  t.snapshot(ast);
+});

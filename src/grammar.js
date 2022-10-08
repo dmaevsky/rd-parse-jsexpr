@@ -74,8 +74,8 @@ const CompoundExpression = Node(All(Expression, Star(All(',', Expression))),
 const ShortNotation = Node(Identifier, ([expr], ...$$) => srcMap({ ...expr, shortNotation: true }, ...$$));
 const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([expression]) => ({ type: 'ComputedProperty', expression }));
 const PropertyName = Any(IdentifierToken, StringLiteral, NumericLiteral, ComputedPropertyName);
-const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), ShortNotation),
-  ([name, value]) => ({ name: value ? name : name.name, value: value || name })
+const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), ShortNotation, SpreadElement),
+  ([name, value]) => name.type === 'SpreadElement' ? name : ({ name: value ? name : name.name, value: value || name })
 );
 const PropertyDefinitions = All(PropertyDefinition, Star(All(',', PropertyDefinition)));
 const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(',')) );
@@ -170,16 +170,36 @@ const LogicalORExpression = BinaryOperatorPrecedence.reduce(ExpressionConstructo
 const ConditionalExpression = Node(All(LogicalORExpression, Optional(All('?', Expression, ':', Expression))),
   ([test, consequent, alternate]) => consequent ? ({ type: 'ConditionalExpression', test, consequent, alternate }) : test);
 
-// Arrow functions
-const BoundName = Node(IdentifierToken, ([name], ...$$) => srcMap({ type: 'BoundName', name }, ...$$));
+// Binding patterns
+export const BindingElement = $ => BindingElementImpl($);
 
-const BindingElement = Node(All(BoundName, Optional(All('=', Expression))),   // Do not support destructuring just yet
-  ([binding, initializer]) => initializer ? { binding, initializer } : { binding });
-const FormalsList = Node(All(BindingElement, Star(All(',', BindingElement))), bound => ({ bound }));
+const BoundName = Node(IdentifierToken, ([name], ...$$) => srcMap({ type: 'BoundName', name }, ...$$));
 const RestElement = Node(All('...', BoundName), ([rest]) => ({rest}));
 
-const FormalParameters = Node(All('(', Any( All(FormalsList, Optional(All(',', RestElement))), Optional(RestElement) ), ')'),
-  parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [] }));
+const BindingList = (List, type) => Node(Any(All(Node(List, bound => ({ bound })), Optional(All(',', Optional(RestElement)))), Optional(RestElement)),
+  parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [], type }));
+
+const WithInitializer = Pattern => Node(All(Pattern, Optional(All('=', Expression))),
+  ([binding, initializer]) => initializer ? { binding, initializer } : { binding });
+
+const SingleNameBinding = WithInitializer(BoundName);
+
+const BindingProperty = Node(Any(All(PropertyName, ':', BindingElement), SingleNameBinding),
+  ([name, binding]) => binding ? { name, ...binding } : { name: name.binding.name, ...name });
+
+const BindingPropertyList = All(BindingProperty, Star(All(',', BindingProperty)));
+const ObjectBindingPattern = All('{', BindingList(BindingPropertyList, 'ObjectBindingPattern'), '}');
+
+const BindingElementList = All(Star(EmptyElement), Optional(All(BindingElement, Star(All(Elision, BindingElement)))));
+const ArrayBindingPattern =	All('[', BindingList(BindingElementList, 'ArrayBindingPattern'), ']');
+
+const BindingPattern = WithInitializer(Any(ObjectBindingPattern, ArrayBindingPattern));
+
+const BindingElementImpl = Any(SingleNameBinding, BindingPattern);
+
+// Arrow functions
+const FormalsList = All(BindingElement, Star(All(',', BindingElement)));
+const FormalParameters = All('(', BindingList(FormalsList, 'FormalParameters'), ')');
 
 const ArrowParameters = Node(Any(BoundName, FormalParameters), ([params]) => params.bound ? params : { bound: [params] });
 
