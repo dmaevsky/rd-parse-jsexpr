@@ -52,8 +52,7 @@ test('exponentiation operator (right associativity)', t => {
 test('ArrowFunction, simple', t => {
   const ast = parser('x => x * x');
   t.is(ast.type, 'ArrowFunction');
-  t.is(ast.parameters.bound.length, 1);
-  t.deepEqual(ast.parameters.bound[0], { type: 'BoundName', name: 'x' });
+  t.deepEqual(ast.parameters, { bindingType: 'SingleName', name: 'x' });
   t.is(ast.parameters.rest, undefined);
   t.is(ast.result.type, 'BinaryExpression');
 });
@@ -62,8 +61,9 @@ test('ArrowFunction, with initializer and rest parameter', t => {
   const ast = parser('(c = 1, ...a) => c + a.length');
   t.is(ast.type, 'ArrowFunction');
   t.is(ast.parameters.bound.length, 1);
+  t.is(ast.parameters.bindingType, 'FormalParameters');
   t.deepEqual(ast.parameters.bound[0].initializer, { type: 'Literal', value: 1, raw: '1' });
-  t.deepEqual(ast.parameters.rest, { type: 'BoundName', name: 'a' });
+  t.deepEqual(ast.parameters.rest, { bindingType: 'SingleName', name: 'a' });
 });
 
 test('template literals', t => {
@@ -136,9 +136,9 @@ test('pos and text for bound names', t => {
   const ast = parser(input);
 
   t.is(ast.type, 'ArrowFunction');
-  t.is(ast.parameters.bound[0].binding.type, 'BoundName');
-  t.is(ast.parameters.bound[0].binding.pos, 1);
-  t.is(ast.parameters.rest.type, 'BoundName');
+  t.is(ast.parameters.bound[0].bindingType, 'SingleName');
+  t.is(ast.parameters.bound[0].pos, 1);
+  t.is(ast.parameters.rest.bindingType, 'SingleName');
   t.is(ast.parameters.rest.pos, 7);
 });
 
@@ -180,9 +180,8 @@ test('object literal with spread', t => {
 
   t.is(ast.type, 'ObjectLiteral');
   t.is(ast.properties[0].name, 'foo');
-  t.is(ast.properties[1].type, 'SpreadElement');
-  t.is(ast.properties[1].expression.type, 'Identifier');
-  t.is(ast.properties[1].expression.name, 'bar');
+  t.is(ast.properties[1].spread.type, 'Identifier');
+  t.is(ast.properties[1].spread.name, 'bar');
 });
 
 test('array literals', t => {
