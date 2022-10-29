@@ -180,12 +180,12 @@ const BindingList = (List, bindingType) => Node(Any(All(Node(List, bound => ({ b
   parts => parts.reduce((acc, part) => Object.assign(acc, part), { bound: [], bindingType }));
 
 const WithInitializer = Pattern => Node(All(Pattern, Optional(All('=', Expression))),
-  ([pattern, initializer]) => initializer ? { ...pattern, initializer } : pattern);
+  ([pattern, initializer]) => initializer ? { pattern, initializer } : { pattern });
 
 const SingleNameBinding = WithInitializer(BoundName);
 
 const BindingProperty = Node(Any(All(PropertyName, ':', BindingElement), SingleNameBinding),
-  ([prop, pattern]) => pattern ? { prop, ...pattern } : { prop: prop.name, ...prop });
+  ([prop, pattern]) => pattern ? { prop, ...pattern } : { prop: prop.pattern.name, ...prop });
 
 const BindingPropertyList = All(BindingProperty, Star(All(',', BindingProperty)));
 const ObjectBindingPattern = All('{', BindingList(BindingPropertyList, 'ObjectPattern'), '}');

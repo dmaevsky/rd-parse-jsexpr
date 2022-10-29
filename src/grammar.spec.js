@@ -62,6 +62,7 @@ test('ArrowFunction, with initializer and rest parameter', t => {
   t.is(ast.type, 'ArrowFunction');
   t.is(ast.parameters.bound.length, 1);
   t.is(ast.parameters.bindingType, 'FormalParameters');
+  t.deepEqual(ast.parameters.bound[0].pattern, { bindingType: 'SingleName', name: 'c' });
   t.deepEqual(ast.parameters.bound[0].initializer, { type: 'Literal', value: 1, raw: '1' });
   t.deepEqual(ast.parameters.rest, { bindingType: 'SingleName', name: 'a' });
 });
@@ -136,8 +137,8 @@ test('pos and text for bound names', t => {
   const ast = parser(input);
 
   t.is(ast.type, 'ArrowFunction');
-  t.is(ast.parameters.bound[0].bindingType, 'SingleName');
-  t.is(ast.parameters.bound[0].pos, 1);
+  t.is(ast.parameters.bound[0].pattern.bindingType, 'SingleName');
+  t.is(ast.parameters.bound[0].pattern.pos, 1);
   t.is(ast.parameters.rest.bindingType, 'SingleName');
   t.is(ast.parameters.rest.pos, 7);
 });
@@ -196,4 +197,19 @@ test('destructuring', t => {
   const ast = parser(input);
 
   t.snapshot(ast);
+});
+
+test('pos and text for bound short-hand parameters', t => {
+  const input = '({ x, y = 5 }) => x * y'
+  const ast = parser(input);
+
+  t.is(ast.type, 'ArrowFunction');
+
+  t.is(ast.parameters.bound[0].pattern.bindingType, 'ObjectPattern');
+  t.is(ast.parameters.bound[0].pattern.bound[0].prop, 'x');
+  t.is(ast.parameters.bound[0].pattern.bound[0].pattern.bindingType, 'SingleName');
+  t.is(ast.parameters.bound[0].pattern.bound[0].pattern.name, 'x');
+  t.is(ast.parameters.bound[0].pattern.bound[0].pattern.text, 'x');
+  t.is(ast.parameters.bound[0].pattern.bound[0].pattern.pos, 3);
+  t.is(ast.parameters.bound[0].pattern.bound[1].pattern.text, 'y');
 });
