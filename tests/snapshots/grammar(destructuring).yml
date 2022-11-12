@@ -1,0 +1,66 @@
+- type: ArrowFunction
+  parameters:
+    bound:
+      - pattern:
+          bound:
+            - pattern:
+                bound:
+                  - prop: y
+                    pattern:
+                      bound:
+                        - prop: z1
+                          pattern:
+                            bindingType: SingleName
+                            name: z1
+                          initializer:
+                            type: Literal
+                            value: 5
+                            raw: "5"
+                      bindingType: ObjectPattern
+                      rest:
+                        bindingType: SingleName
+                        name: z2
+                    initializer:
+                      type: ObjectLiteral
+                      properties:
+                        - name: x
+                          value:
+                            type: Literal
+                            value: 6
+                            raw: "6"
+                bindingType: ObjectPattern
+            - pattern:
+                bindingType: SingleName
+                name: z3
+          bindingType: ArrayPattern
+          rest:
+            bindingType: SingleName
+            name: z4
+    bindingType: FormalParameters
+  result:
+    type: BinaryExpression
+    left:
+      type: BinaryExpression
+      left:
+        type: BinaryExpression
+        left:
+          type: Identifier
+          name: z1
+        operator: "*"
+        right:
+          type: MemberExpression
+          object:
+            type: Identifier
+            name: z2
+          property: x
+      operator: "*"
+      right:
+        type: Identifier
+        name: z3
+    operator: "*"
+    right:
+      type: MemberExpression
+      object:
+        type: Identifier
+        name: z4
+      property: length

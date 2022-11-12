@@ -1,0 +1,10 @@
+- type: ObjectLiteral
+  properties:
+    - name: foo
+      value:
+        type: Literal
+        value: 5
+        raw: "5"
+    - spread:
+        type: Identifier
+        name: bar

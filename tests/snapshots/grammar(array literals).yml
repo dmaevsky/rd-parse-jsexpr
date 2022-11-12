@@ -1,0 +1,26 @@
+- type: ArrayLiteral
+  elements:
+    - type: ArrayLiteral
+      elements:
+        - empty: true
+        - empty: true
+        - empty: true
+    - type: ArrayLiteral
+      elements:
+        - empty: true
+        - type: Literal
+          value: 5
+          raw: "5"
+        - empty: true
+    - type: ArrayLiteral
+      elements:
+        - spread:
+            type: Identifier
+            name: a
+        - empty: true
+        - type: Literal
+          value: 5
+          raw: "5"
+        - spread:
+            type: Identifier
+            name: b

@@ -1,0 +1,20 @@
+- type: TemplateLiteral
+  parts:
+    - - chunks
+      - "Mismatched timing labels (expected "
+    - - expressions
+      - type: MemberExpression
+        object:
+          type: MemberExpression
+          object:
+            type: Identifier
+            name: this
+          property: current_timing
+        property: label
+    - - chunks
+      - ", got "
+    - - expressions
+      - type: Identifier
+        name: label
+    - - chunks
+      - )

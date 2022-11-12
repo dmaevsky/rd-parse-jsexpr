@@ -1,0 +1,7 @@
+- type: ObjectLiteral
+  properties:
+    - name: foo
+      value:
+        type: Identifier
+        name: foo
+        shortNotation: true
