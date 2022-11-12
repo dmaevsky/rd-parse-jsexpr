@@ -24,9 +24,9 @@ test('Identifier', () => {
   assert.equal(ast.pos, 1);
 });
 
-test('boolean literals', t => {
+test('boolean literals', async t => {
   const ast = parser('false || true');
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 });
 
 test('a string literal', () => {
@@ -39,19 +39,19 @@ test('a number literal', () => {
   assert.deepEqual(ast, { type: 'Literal', value: 500, raw: '5e2' });
 });
 
-test('operator precedence', t => {
+test('operator precedence', async t => {
   const ast = parser('x*x + y*y');
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 });
 
-test('left associativity', t => {
+test('left associativity', async t => {
   const ast = parser('a + b - c');
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 });
 
-test('exponentiation operator (right associativity)', t => {
+test('exponentiation operator (right associativity)', async t => {
   const ast = parser('a ** b ** c / 2');
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 });
 
 test('ArrowFunction, simple', () => {
@@ -82,15 +82,15 @@ test('template literals', () => {
   assert.equal(ast.parts[4][1].type, 'BinaryExpression');
 });
 
-test('template litarals 2', t => {
+test('template litarals 2', async t => {
   const input = '`Mismatched timing labels (expected ${this.current_timing.label}, got ${label})`';
-  snapshot(parser(input), t.name);
+  await snapshot(parser(input), t.name);
 });
 
-test('object literal short notation', t => {
+test('object literal short notation', async t => {
   const input = '{ foo }';
   const ast = parser(input);
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 
   assert.equal(ast.properties[0].name, 'foo');
   assert.equal(ast.properties[0].value.pos, 2);
@@ -178,11 +178,11 @@ test('pos and text for arrow functions', () => {
   assert.equal(ast.text, '() => x');
 });
 
-test('object literal with spread', t => {
+test('object literal with spread', async t => {
   const input = '{ foo: 5, ...bar }';
   const ast = parser(input);
 
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 
   assert.equal(ast.type, 'ObjectLiteral');
   assert.equal(ast.properties[0].name, 'foo');
@@ -190,18 +190,18 @@ test('object literal with spread', t => {
   assert.equal(ast.properties[1].spread.name, 'bar');
 });
 
-test('array literals', t => {
+test('array literals', async t => {
   const input = '[[,,,], [,5,,], [...a,, 5, ...b]]';
   const ast = parser(input);
 
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 });
 
-test('destructuring', t => {
+test('destructuring', async t => {
   const input = '([{y: {z1 = 5, ...z2} = {x:6}}, z3, ...z4]) => (z1 * z2.x) * z3 * z4.length';
   const ast = parser(input);
 
-  snapshot(ast, t.name);
+  await snapshot(ast, t.name);
 });
 
 test('pos and text for bound short-hand parameters', () => {
