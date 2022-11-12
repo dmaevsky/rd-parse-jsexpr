@@ -25,7 +25,9 @@
   "author": "Dmitry Maevsky",
   "license": "MIT",
   "devDependencies": {
-    "ava": "^4.3.3"
+    "ava": "^4.3.3",
+    "usnap": "^0.1.0",
+    "utap": "^0.1.2"
   },
   "dependencies": {
     "rd-parse": "^3.4.0"
