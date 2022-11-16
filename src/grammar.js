@@ -193,9 +193,9 @@ const ObjectBindingPattern = All('{', BindingList(BindingPropertyList, 'ObjectPa
 const BindingElementList = All(Star(EmptyElement), Optional(All(BindingElement, Star(All(Elision, BindingElement)))));
 const ArrayBindingPattern = All('[', BindingList(BindingElementList, 'ArrayPattern'), ']');
 
-const BindingPattern = WithInitializer(Any(ObjectBindingPattern, ArrayBindingPattern));
+export const BindingPattern = Any(BoundName, ObjectBindingPattern, ArrayBindingPattern);
 
-const BindingElementImpl = Node(Any(SingleNameBinding, BindingPattern), ([pattern], ...$$) => srcMap(pattern, ...$$));
+const BindingElementImpl = Node(WithInitializer(BindingPattern), ([pattern], ...$$) => srcMap(pattern, ...$$));
 
 // Arrow functions
 const FormalsList = All(BindingElement, Star(All(',', BindingElement)));
