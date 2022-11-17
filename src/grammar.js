@@ -33,6 +33,8 @@ const srcMap = (obj, $, $next) => Object.defineProperties(obj, {
   text: { writable: true, configurable: true, value: ($.text || $next.text).slice($.pos, $next.pos) },
 });
 
+const withSrcMap = (reducer = ([n]) => n) => (parts, ...$$) => srcMap(reducer(parts, ...$$), ...$$);
+
 const Expression = $ => Grammar($);
 
 const Identifier = Node(IdentifierToken, ([name]) => ({ type: 'Identifier', name }));
@@ -71,7 +73,7 @@ const CompoundExpression = Node(All(Expression, Star(All(',', Expression))),
   leafs => leafs.length > 1 ? { type: 'CompoundExpression', leafs } : leafs[0]);
 
 // Object literal
-const ShortNotation = Node(Identifier, ([expr], ...$$) => srcMap({ ...expr, shortNotation: true }, ...$$));
+const ShortNotation = Node(Identifier, withSrcMap(([expr]) => ({ ...expr, shortNotation: true })));
 const ComputedPropertyName = Node(All('[', CompoundExpression, ']'), ([computed]) => ({ computed }));
 const PropertyName = Any(IdentifierToken, StringLiteral, NumericLiteral, ComputedPropertyName);
 const PropertyDefinition = Node(Any(All(PropertyName, ':', Expression), ShortNotation, SpreadElement),
@@ -82,8 +84,7 @@ const PropertyDefinitionList = Optional( All(PropertyDefinitions, Optional(','))
 const ObjectLiteral = Node(All('{', PropertyDefinitionList, '}'), properties => ({ type: 'ObjectLiteral', properties}));
 
 // Primary expression
-const PrimaryExpression = Node(Any(Literal, Identifier, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')')),
-  ([expr], ...$$) => srcMap(expr, ...$$));
+const PrimaryExpression = Node(Any(Literal, Identifier, ArrayLiteral, ObjectLiteral, All('(', CompoundExpression, ')')), withSrcMap());
 
 // Member expression
 const ArgumentsList = All(Element, Star(All(',', Element)));
@@ -173,7 +174,7 @@ const ConditionalExpression = Node(All(LogicalORExpression, Optional(All('?', Ex
 // Binding patterns
 export const BindingElement = $ => BindingElementImpl($);
 
-const BoundName = Node(IdentifierToken, ([name], ...$$) => srcMap({ bindingType: 'SingleName', name }, ...$$));
+const BoundName = Node(IdentifierToken, withSrcMap(([name]) => ({ bindingType: 'SingleName', name })));
 const RestElement = Node(All('...', BoundName), ([rest]) => ({rest}));
 
 const BindingList = (List, bindingType) => Node(Any(All(Node(List, bound => ({ bound })), Optional(All(',', Optional(RestElement)))), Optional(RestElement)),
@@ -193,9 +194,9 @@ const ObjectBindingPattern = All('{', BindingList(BindingPropertyList, 'ObjectPa
 const BindingElementList = All(Star(EmptyElement), Optional(All(BindingElement, Star(All(Elision, BindingElement)))));
 const ArrayBindingPattern = All('[', BindingList(BindingElementList, 'ArrayPattern'), ']');
 
-export const BindingPattern = Any(BoundName, ObjectBindingPattern, ArrayBindingPattern);
+export const BindingPattern = Node(Any(BoundName, ObjectBindingPattern, ArrayBindingPattern), withSrcMap());
 
-const BindingElementImpl = Node(WithInitializer(BindingPattern), ([pattern], ...$$) => srcMap(pattern, ...$$));
+const BindingElementImpl = Node(WithInitializer(BindingPattern), withSrcMap());
 
 // Arrow functions
 const FormalsList = All(BindingElement, Star(All(',', BindingElement)));
@@ -208,6 +209,6 @@ const ArrowResult = Any(FoolSafe, Expression);
 
 const ArrowFunction = Node(All(ArrowParameters, '=>', ArrowResult), ([parameters, result]) => ({ type: 'ArrowFunction', parameters, result }));
 
-const Grammar = Node(Any(ArrowFunction, ConditionalExpression), ([expr], ...$$) => srcMap(expr, ...$$));
+const Grammar = Node(Any(ArrowFunction, ConditionalExpression), withSrcMap());
 
 export default IgnoreWhitespace(Grammar);
